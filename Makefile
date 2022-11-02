@@ -12,8 +12,10 @@ CC=gcc
 
 SRC_DIR = .
 SRCS = \
-main.c \
-simpleEndurosat.c \
+obc.c \
+ftdi_manager.c\
+storage_manager.c\
+endurosat_manager.c \
 es_crc32.c
 
 INCS_DIR = . 

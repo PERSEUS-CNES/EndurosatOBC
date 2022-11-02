@@ -5,7 +5,7 @@ Clone this repository and run `make`.
 It will compile object files in `obj` directory, and create an executable named `obc` in `out` directory.
 To execute it :
 ```
-./out/obc
+sudo ./out/obc
 ```
 To clean object files and executable :
 ```

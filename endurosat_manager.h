@@ -1,3 +1,5 @@
+#ifndef ENDUROSAT_MANAGER_H
+#define ENDUROSAT_MANAGER_H
 #include <stdio.h>
 #include <assert.h>
 #include "ftd2xx.h"
@@ -13,7 +15,7 @@
 #define S_X_BAND_TRNSM_RX_BUFF_SIZE       (1536)
 
 #define S_X_BAND_TRNSM_HEADER (0x50555345)        /* Header of every packet */
-#define S_BAND_TRNSM_DEFAULT_DEV_ID (0x0720)            /* ID of the device that the OBC is communicating with */
+#define S_BAND_TRNSM_DEFAULT_DEV_ID (0x2007)            /* ID of the device that the OBC is communicating with */
 #define S_X_BAND_TRNSM_CMD_RETRY              (6)                 /* Number of times to reply a whole request/Command */
 #define S_X_BAND_STACK_DELAY                  (2)                 /* X-Band stack delay between protocol states (in ms) */
 
@@ -244,11 +246,22 @@ typedef enum {
 typedef struct {
     uint16_t  Reserved;
     uint16_t  Size;
-    int32_t   FileHandler;
+    uint32_t  FileHandler;
     uint32_t  PacketNumber;
     uint8_t   Data[S_X_BAND_TRNSM_TX_BUFF_SIZE];
 } __attribute__((__packed__)) S_X_BAND_TRNSM_WriteFile_struct;
 
+typedef struct {
+    uint8_t  DirNextAvailable;
+    uint16_t NumberFiles;
+    uint8_t  * FileList;
+} S_X_BAND_TRNSM_FileList_struct;
+
+typedef struct{
+    uint32_t  Size;          /* size of the file */
+    uint8_t  NameLength;    /* length of the name of the file */
+    uint8_t  FileName[31];  /* String with the name of the file */
+} S_X_BAND_TRNSM_FileInfo_struct;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * INTERNAL TYPES DEFINITION
@@ -285,14 +298,21 @@ typedef struct X_BAND_CMD_StackEntry {
     struct X_BAND_CMD_StackEntry *parentEntry;
 } S_X_BAND_CMD_StackEntry;
 
+#define S_X_BAND_TRNSM_READ_FILE_CHUNCK_SIZE  (1472)              /* Size of data read by one packet */
+
 extern FT_HANDLE  ftHandle;
-extern S_X_BAND_CMD_StackEntry stackEntry;
+//extern S_X_BAND_CMD_StackEntry stackEntry;
 extern uint8_t  S_X_BAND_TRNSM_Result_Rx_Buffer[S_X_BAND_TRNSM_RX_BUFF_SIZE];  /* The received data that has been requested */
+extern S_X_BAND_TRNSM_WriteFile_struct S_X_BAND_TRNSM_FileDataBuffer;
+extern uint32_t S_X_BAND_TRNSM_UploadToXSBand_FPos, S_X_BAND_TRNSM_UploadToXSBand_ReadLen;
 
 uint8_t S_X_BAND_TRNSM_CreateFile (S_X_BAND_CMD_StackEntry *stackEntry);
 uint8_t S_X_BAND_TRNSM_OpenFile (S_X_BAND_CMD_StackEntry *stackEntry);
+uint8_t S_X_BAND_TRNSM_DelFile (S_X_BAND_CMD_StackEntry *stackEntry);
+uint8_t S_X_BAND_TRNSM_FileNameParser (uint8_t * FileListBuffer, S_X_BAND_TRNSM_FileInfo_struct * File);
+uint8_t S_X_BAND_TRNSM_CMD_Dir_Extended (S_X_BAND_CMD_StackEntry *stackEntry);
+uint8_t S_X_BAND_TRNSM_CMD_Dir (S_X_BAND_CMD_StackEntry *stackEntry);
 S_X_BAND_TRNSM_Response_enum S_X_BAND_TRNSM_GetResult( S_X_BAND_TRNSM_CMD_enum CMD, S_X_BAND_TRNSM_RetRes_enum CMD_Type, uint8_t * RxData, uint16_t * RxDataLenght);
 void  S_X_BAND_TRNSM_Send_Ack(S_X_BAND_TRNSM_CMD_enum CMD, uint16_t CMD_Type);
 S_X_BAND_TRNSM_Response_enum S_X_BAND_TRNSM_SendCMD (S_X_BAND_TRNSM_CMD_enum CMD, uint16_t CMD_Type, uint8_t * TxData, uint16_t TxDataLenght);
-void purgeBuffer();
-void lenghtQueue(DWORD* RxBytes);
+#endif

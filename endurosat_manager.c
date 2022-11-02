@@ -1,4 +1,4 @@
-#include "simpleEndurosat.h"
+#include "endurosat_manager.h"
 
 #define S_X_BAND_TRNSM_TX_RETRY               (10)                /* Number of times to reply any packet */
 #define S_X_BAND_TRNSM_READ_FILE_CHUNCK_SIZE  (1472)              /* Size of data read by one packet */
@@ -53,12 +53,11 @@ void S_X_BAND_TRNSM_Send_Ack ( S_X_BAND_TRNSM_CMD_enum CMD, uint16_t CMD_Type);
 
 uint8_t  S_X_BAND_TRNSM_X_Band_Data[S_X_BAND_TRNSM_RX_BUFF_SIZE];           /* Buffer for row data from the S-band transmitter - includes header, information about the packet and the data itself */
 static uint8_t  TxDataBuffer[S_X_BAND_TRNSM_TX_BUFF_SIZE];                /* Buffer for the data that is going to be transmitted */
-S_X_BAND_CMD_StackEntry stackEntry;
-FT_HANDLE  ftHandle = NULL;
+//S_X_BAND_CMD_StackEntry stackEntry;
 static uint32_t S_X_BAND_LastExecCmd_Tick;    
 uint8_t  S_X_BAND_TRNSM_Result_Rx_Buffer[S_X_BAND_TRNSM_RX_BUFF_SIZE];      /* The received data that has been requested */
-
-
+S_X_BAND_TRNSM_WriteFile_struct S_X_BAND_TRNSM_FileDataBuffer;
+uint32_t S_X_BAND_TRNSM_UploadToXSBand_FPos;
 
 void readPackStruct(S_X_BAND_TRNSM_Pack_struct * RxPackStruct, uint8_t RxBuffer[])
 {
@@ -86,49 +85,6 @@ void readPackStruct(S_X_BAND_TRNSM_Pack_struct * RxPackStruct, uint8_t RxBuffer[
 	printf("RxPackStruct->CRC32 : %.4X\n", RxPackStruct->CRC32);*/
 }
 
-
-void purgeBuffer()
-{
-	int ftStatus = FT_OK;
-	ftStatus = FT_Purge(ftHandle, FT_PURGE_RX | FT_PURGE_TX); // Purge both Rx and Tx buffers
-	if(ftStatus == FT_OK)
-	{
-		printf("FT_Purge OK\n");
-	}
-	else
-	{
-		printf("FT_Purge failed\n");
-	}
-}
-
-void lenghtQueue(DWORD* RxBytes)
-{
-	int count;
-	usleep(100);
-	printf("\n Queue status 1111111111111111111111: %i\n", *RxBytes);	
-	count = 5000;
-	*RxBytes=0;	
-	while(count > 0)
-	{
-		usleep(100);	
-		FT_GetQueueStatus(ftHandle,RxBytes);
-		//printf("\n Queue status 22 : %i\n", *RxBytes);
-		if(*RxBytes !=0 && *RxBytes%16 == 0)
-		{
-			break;
-		}
-		count--;
-	}
-	printf("\n Queue status 22 : %i\n", *RxBytes);
-
-	if(!(*RxBytes !=0 && *RxBytes%16 == 0))
-	{
-		*RxBytes=0;
-	}
-	printf("\n Queue status111 : %i\n", *RxBytes);
-
-}
-
 /*!
 *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * @brief Create a file in the SD card of the S-Band transmitter
@@ -141,11 +97,10 @@ void lenghtQueue(DWORD* RxBytes)
 uint8_t S_X_BAND_TRNSM_CreateFile (S_X_BAND_CMD_StackEntry *stackEntry) {
     uint8_t retStat = 0x00;
     uint16_t RxDataLenght;
-
+	printf("Create FILE !!!!!!!!!!!\n");
     // Check for available retries
     if (!stackEntry->retries) {
         if (stackEntry->state != S_X_BAND_TRNSM_CMD_STATE_CMD_FINISHED) {
-					printf("\n res541 \n");		
             retStat = S_X_BAND_TRNSM_PARAMS_COMM_ERR;
         }
         return retStat;
@@ -155,19 +110,17 @@ uint8_t S_X_BAND_TRNSM_CreateFile (S_X_BAND_CMD_StackEntry *stackEntry) {
         case S_X_BAND_TRNSM_CMD_STATE_CMD:
         case S_X_BAND_TRNSM_CMD_STATE_CMD_RES:
             // Send command
-			printf("\n ici2  \n");
             if (!stackEntry->fileSize) {
-                retStat = 0x01;
+                retStat = S_X_BAND_TRNSM_STAT_COMM_ERR;
                 break;
             }
             // Should insert FileName + FileSize like that
-            memcpy (&(stackEntry->ESTTC_data[++stackEntry->ESTTC_data_size]), &stackEntry->fileSize, sizeof (stackEntry->fileSize));
+            memcpy (&(stackEntry->ESTTC_data[stackEntry->ESTTC_data_size]), &stackEntry->fileSize, sizeof (stackEntry->fileSize));
             stackEntry->ESTTC_data_size += sizeof (stackEntry->fileSize);
             retStat = S_X_BAND_TRNSM_SendCMD (stackEntry->command, stackEntry->type, stackEntry->ESTTC_data, stackEntry->ESTTC_data_size);
             if (S_X_BAND_TRNSM_STAT_ACK == retStat) {
                 stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD_GETRESULT;
                 //stackEntry->timestamp = xTaskGetTickCount();
-						printf("\n res1 \n");
             } else {
                 // Failed to send the command
                 stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD_RES;
@@ -175,8 +128,8 @@ uint8_t S_X_BAND_TRNSM_CreateFile (S_X_BAND_CMD_StackEntry *stackEntry) {
                     // If there is no communication with the Device try to reconfigure the speed
                     //if (pdFALSE == S_X_BAND_TRNSM_AutoSearchBaudrate (stackEntry->devID)) {
                     //    // Communication at all baud rates has failed
-                    //    stackEntry->retries = 0;
-                    //    break;
+                    stackEntry->retries = 0;
+                    break;
                     //}
                 }
                 // Failed to send the command
@@ -194,11 +147,8 @@ uint8_t S_X_BAND_TRNSM_CreateFile (S_X_BAND_CMD_StackEntry *stackEntry) {
             //stackEntry->timestamp = xTaskGetTickCount();
             // Send GetResult command
             retStat = S_X_BAND_TRNSM_GetResult (stackEntry->command, stackEntry->type, S_X_BAND_TRNSM_Result_Rx_Buffer, &RxDataLenght);
-			// retStat = S_X_BAND_TRNSM_GetResult (S_X_BAND_TRNSM_CMD_enum CMD, S_X_BAND_TRNSM_RetRes_enum CMD_Type, uint8_t * RxData, uint16_t * RxDataLenght);
-			// decom
             // Update the state
             stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD_GETRESULT_RES;
-					printf("\n res3 \n");
             if (S_X_BAND_TRNSM_STAT_GET_RESULT == retStat) {
                 // Verify the answer
                 if (RxDataLenght == sizeof (retStat) + sizeof (uint32_t)) {
@@ -210,9 +160,13 @@ uint8_t S_X_BAND_TRNSM_CreateFile (S_X_BAND_CMD_StackEntry *stackEntry) {
                         if (retStat == S_X_BAND_TRNSM_CREATE_OK) {
                             stackEntry->fileHandler = *((uint32_t *)&S_X_BAND_TRNSM_Result_Rx_Buffer[1]);
                             //stackEntry->fileHandler = ((uint32_t)S_X_BAND_TRNSM_Result_Rx_Buffer[4] << 24) + ((uint32_t)S_X_BAND_TRNSM_Result_Rx_Buffer[3] << 16) + ((uint32_t)S_X_BAND_TRNSM_Result_Rx_Buffer[2] << 8) + S_X_BAND_TRNSM_Result_Rx_Buffer[1];
-                        }
-                        // Update the state
-                        stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD_FINISHED;
+							// Update the state
+							stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD_FINISHED;
+						}
+						else
+						{
+							stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD;
+						}
                         break;
                     }
                 } else {
@@ -232,7 +186,387 @@ uint8_t S_X_BAND_TRNSM_CreateFile (S_X_BAND_CMD_StackEntry *stackEntry) {
     }
 
     return retStat;
+}
 
+/*!
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* @brief Delete a file from the SD card of the S-Band transmitter
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* @param[input]      stackEntry - current stack entry
+* @param[output]     none
+* @return            retStat - a value from enumeration X_BAND_TRNSM_DellStatus_enum
+* @note              none
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+uint8_t S_X_BAND_TRNSM_DelFile (S_X_BAND_CMD_StackEntry *stackEntry) {
+    uint8_t retStat = 0x00;
+    uint16_t RxDataLenght;
+	printf("DEL FILE !!!!!!!!!!!\n");
+    // Check for available retries
+    if (!stackEntry->retries) {
+        if (stackEntry->state != S_X_BAND_TRNSM_CMD_STATE_CMD_FINISHED) {
+            retStat = S_X_BAND_TRNSM_PARAMS_COMM_ERR;
+        }
+        return retStat;
+    }
+    // Check for command state
+    switch (stackEntry->state) {
+        case S_X_BAND_TRNSM_CMD_STATE_CMD:
+        case S_X_BAND_TRNSM_CMD_STATE_CMD_RES:
+            // Send command
+            if (stackEntry->command == S_X_BAND_TRNSM_CMD_DELL_F) {
+                uint8_t *FileName = (uint8_t *)stackEntry->ESTTC_data;
+                uint8_t FileNameLength = strlen ((char *)FileName) + 1;
+                retStat = S_X_BAND_TRNSM_SendCMD (stackEntry->command, stackEntry->type, FileName, FileNameLength);
+            } else {
+				stackEntry->command == S_X_BAND_TRNSM_CMD_DELL_ALL_F;
+                retStat = S_X_BAND_TRNSM_SendCMD (stackEntry->command, stackEntry->type, 0, 0);
+            }
+            if (S_X_BAND_TRNSM_STAT_ACK == retStat) {
+                stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD_GETRESULT;
+                //stackEntry->timestamp = xTaskGetTickCount();
+            } else {
+                // Failed to send the command
+                stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD_RES;
+                if (S_X_BAND_TRNSM_STAT_COMM_ERR == retStat) {
+                    stackEntry->retries = 0;
+                    break;
+                }
+                // Failed to send the command
+                // retStat = 0x01;
+                // Subtract the retry count
+                // stackEntry->retries--;
+                S_X_BAND_STACK_RETR_SUB (retStat != S_X_BAND_TRNSM_STAT_ACK && retStat != S_X_BAND_TRNSM_STAT_GET_RESULT, stackEntry);
+            }
+            retStat = 0x00;
+            break;
+        case  S_X_BAND_TRNSM_CMD_STATE_CMD_GETRESULT:
+        case  S_X_BAND_TRNSM_CMD_STATE_CMD_GETRESULT_RES:
+            // Send GetResult command
+            retStat = S_X_BAND_TRNSM_GetResult (stackEntry->command, stackEntry->type, S_X_BAND_TRNSM_Result_Rx_Buffer, &RxDataLenght);
+            // Update the state
+            stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD_GETRESULT_RES;
+            if (S_X_BAND_TRNSM_STAT_GET_RESULT == retStat) {
+                // Verify the answer
+                if (RxDataLenght == sizeof (retStat)) {
+                    // Get the status of the request
+                    retStat = S_X_BAND_TRNSM_Result_Rx_Buffer[0];
+                    // If the status is "OK"
+                    if (retStat == S_X_BAND_TRNSM_DELL_OK || retStat == S_X_BAND_TRNSM_DELL_NOT_FOUND) {
+                        // Update the state
+                        stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD_FINISHED;
+                        break;
+                    }
+                } else {
+                    // Wrong answer
+                    // retStat = 0x01;
+                }
+            } else {
+                // Failed to send the command
+                // retStat = 0x01;
+                if (S_X_BAND_STACK_RETR_COND(retStat)) retStat = 0x00;
+            }
+            // Subtract the retry count
+            stackEntry->retries--;
+            break;
+        default:
+            break;
+    }
+    return retStat;
+}
+
+/*!
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* @brief Lists all available files in the SD card
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* @param[input]      Identifier - ID of the used S or X band transmitter
+* @param[input]      FileListBuffer - FileList from functions X_BAND_TRNSM_CMD_Dir() and X_BAND_TRNSM_CMD_DirNext()
+* @param[output]     File - a buffer where will be written the found filename, the length of the name, and the size of the file
+* @return            pdTRUE - the name of the file has been found, pdFALSE - Error
+* @note              none
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+uint8_t S_X_BAND_TRNSM_FileNameParser (uint8_t * FileListBuffer, S_X_BAND_TRNSM_FileInfo_struct * File) {
+    uint32_t * Size;
+
+    File->NameLength = strlen((char *)FileListBuffer)+1;  //Get the length of the name of the file + the Null character after it
+
+    if( (File->NameLength > 0 ) && (File->NameLength <= 31 ) )  // Verify the length
+    {
+        /* Get the size of the file */
+        Size = (uint32_t *)&FileListBuffer[File->NameLength];
+        File->Size = *Size;
+
+        // Copy the name of the file
+        memcpy( File->FileName, FileListBuffer, File->NameLength);
+
+        return 0x01; //OK
+    }
+
+    return 0x00;   //File name is NOT found
+}
+
+/*!
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* @brief Lists all available files in the SD card
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* @param[input]      stackEntry - current stack entry
+* @param[output]     none
+* @return            retStat - a value from enumeration X_BAND_TRNSM_Dir_enum
+* @note              none
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+uint8_t S_X_BAND_TRNSM_CMD_Dir (S_X_BAND_CMD_StackEntry *stackEntry) {
+    uint8_t retStat = 0x00;
+    uint16_t RxDataLenght;
+    S_X_BAND_TRNSM_FileList_struct *DirData = (S_X_BAND_TRNSM_FileList_struct *)stackEntry->ESTTC_data;
+
+    // Check for available retries
+    if (!stackEntry->retries) {
+        if (stackEntry->state != S_X_BAND_TRNSM_CMD_STATE_CMD_FINISHED) {
+            retStat = S_X_BAND_TRNSM_PARAMS_COMM_ERR;
+        }
+        return retStat;
+    }
+    // Check for command state
+    switch (stackEntry->state) {
+        case S_X_BAND_TRNSM_CMD_STATE_CMD:
+        case S_X_BAND_TRNSM_CMD_STATE_CMD_RES:
+            // Send command
+            retStat = S_X_BAND_TRNSM_SendCMD (stackEntry->command, stackEntry->type, 0, 0);
+            if (S_X_BAND_TRNSM_STAT_ACK == retStat) {
+                stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD_GETRESULT;
+            } else {
+                // Failed to send the command
+                stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD_RES;
+                if (S_X_BAND_TRNSM_STAT_COMM_ERR == retStat) {
+                    // Communication at all baud rates has failed
+                    stackEntry->retries = 0;
+                    break;
+                }
+                // Failed to send the command
+                // retStat = 0x01;
+                // Subtract the retry count
+                // stackEntry->retries--;
+                S_X_BAND_STACK_RETR_SUB (retStat != S_X_BAND_TRNSM_STAT_ACK && retStat != S_X_BAND_TRNSM_STAT_GET_RESULT, stackEntry);
+            }
+            retStat = 0x00;
+            break;
+        case  S_X_BAND_TRNSM_CMD_STATE_CMD_GETRESULT:
+        case  S_X_BAND_TRNSM_CMD_STATE_CMD_GETRESULT_RES:
+            // Send GetResult command
+            retStat = S_X_BAND_TRNSM_GetResult (stackEntry->command, stackEntry->type, S_X_BAND_TRNSM_Result_Rx_Buffer, &RxDataLenght);
+            // Update the state
+            stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD_GETRESULT_RES;
+            if (S_X_BAND_TRNSM_STAT_GET_RESULT == retStat) {
+                // Verify the answer
+                if (RxDataLenght >= 4) {
+                    // Get the status of the request
+                    retStat = S_X_BAND_TRNSM_Result_Rx_Buffer[0];
+                    // If the status is "OK"
+                    if (retStat == S_X_BAND_TRNSM_DIR_OK || retStat == S_X_BAND_TRNSM_DIR_NO_FILES) {
+                        // Update the state
+                        stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD_FINISHED;
+                        // Copy the data
+                        if (retStat == S_X_BAND_TRNSM_DIR_OK) {
+                            DirData->DirNextAvailable = S_X_BAND_TRNSM_Result_Rx_Buffer[1];
+                            DirData->NumberFiles = (S_X_BAND_TRNSM_Result_Rx_Buffer[3] << 8) + S_X_BAND_TRNSM_Result_Rx_Buffer[2];
+                            //DirData->FileList = &stackEntry->ESTTC_data[3];
+                            //if (DirData->FileList != NULL && RxDataLenght > 4) {
+                                // stackEntry->ESTTC_data_size = RxDataLenght - 4;
+                                //memcpy (DirData->FileList, &X_BAND_TRNSM_Result_Rx_Buffer[4], RxDataLenght - 4);
+                                memcpy (&stackEntry->ESTTC_data[sizeof (DirData->DirNextAvailable) + sizeof (DirData->NumberFiles)], &S_X_BAND_TRNSM_Result_Rx_Buffer[4], RxDataLenght - 4);
+                                stackEntry->ESTTC_data_size = RxDataLenght - 1;
+                            //}
+                        } else {
+                            DirData->DirNextAvailable = DirData->NumberFiles = 0;
+                        }
+                        break;
+                    }
+                } else {
+                    // Wrong answer
+                    // retStat = 0x01;
+                }
+            } else {
+                // Failed to send the command
+                // retStat = 0x01;
+                if (S_X_BAND_STACK_RETR_COND(retStat)) retStat = 0x00;
+            }
+            // Subtract the retry count
+            stackEntry->retries--;
+            break;
+        default:
+            break;
+    }
+
+    return retStat;
+}
+
+/*!
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* @brief Lists all available files in the SD card
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* @param[input]      stackEntry - current stack entry
+* @param[output]     none
+* @return            retStat - a value from enumeration X_BAND_TRNSM_Dir_enum
+* @note              none
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+uint8_t S_X_BAND_TRNSM_CMD_Dir_Extended (S_X_BAND_CMD_StackEntry *stackEntry) {
+    uint8_t retStat = 0x00;
+    S_X_BAND_TRNSM_FileList_struct DirData;
+    S_X_BAND_TRNSM_FileInfo_struct FileName;
+    static uint8_t S_X_BAND_TRNSM_CMD_Dir_i = 0, S_X_BAND_TRNSM_CMD_Dir_index = 0;
+
+    // Do da dew
+    //retStat = S_X_BAND_TRNSM_CMD_Dir (&XSBandStack_Slave);
+    if (retStat) {
+        stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD_FINISHED;
+        return retStat;
+    } else if (stackEntry->state == S_X_BAND_TRNSM_CMD_STATE_CMD_FINISHED) {
+        // Check the status
+        if (stackEntry->ESTTC_data_size >= (sizeof (uint8_t) + sizeof (uint16_t))) {
+            memcpy (&DirData, stackEntry->ESTTC_data, sizeof (uint8_t) + sizeof (uint16_t));
+            //DirData.FileList = &XBandStack_Slave.ESTTC_data[3];
+            DirData.FileList = (uint8_t *)&stackEntry->ESTTC_data[sizeof (uint8_t) + sizeof (uint16_t)];
+        }
+        if (!S_X_BAND_TRNSM_CMD_Dir_i++) {
+            stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD;
+            printf ( "Page 0, Found files = %d \r\n", DirData.NumberFiles);
+            for (uint8_t i = 0; i < DirData.NumberFiles; i++) {
+                if (S_X_BAND_TRNSM_FileNameParser (&DirData.FileList[S_X_BAND_TRNSM_CMD_Dir_index], &FileName)) {
+                    S_X_BAND_TRNSM_CMD_Dir_index += FileName.NameLength + 4;
+                    printf ( "%02d Name: %s ", i, FileName.FileName);
+                    printf ( " [Size: %d]\r\n", (int)FileName.Size);
+                } else {
+                    printf ( " File name parser Err \r\n");
+                    retStat = 0x01;
+                    DirData.DirNextAvailable = 0;
+                    break;
+                }
+            }
+        } else {
+            stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD;
+            // Continunu
+            printf ( "\r\nPage %d, Found files = %d \r\n", S_X_BAND_TRNSM_CMD_Dir_i, DirData.NumberFiles);
+            for (uint8_t i = 0; i < DirData.NumberFiles; i++) {
+                if (S_X_BAND_TRNSM_FileNameParser (&DirData.FileList[S_X_BAND_TRNSM_CMD_Dir_index], &FileName)) {
+                    S_X_BAND_TRNSM_CMD_Dir_index += FileName.NameLength + 4;
+                    printf ( "%02d Name: %s ", i, FileName.FileName);
+                    printf ( " [Size: %d]\r\n", (int)FileName.Size);
+                } else {
+                    printf ( " File name parser Err \r\n");
+                    retStat = 0x01;
+                    DirData.DirNextAvailable = 0;
+                    break;
+                }
+            }
+            // Check the counter, if the limit is reached - stop printing the DIR data
+            if (S_X_BAND_TRNSM_CMD_Dir_i == 50) {
+                DirData.DirNextAvailable = 0;
+            }
+        }
+        // X_BAND_TRNSM_CMD_Dir_i++;
+        // Reset the slave command
+        stackEntry->command = S_X_BAND_TRNSM_CMD_DIR_NEXT_F;
+        stackEntry->ESTTC_data_size = 0;
+        S_X_BAND_TRNSM_CMD_Dir_index = 0;
+        // Check for more data
+        if (!DirData.DirNextAvailable) {
+            stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD_FINISHED;
+        }
+    }
+
+    return retStat;
+}
+
+/*!
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* @brief Create a file in the SD card of the S-Band transmitter
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* @param[input]      stackEntry - current stack entry
+* @return            retStat - a value from enumeration X_BAND_TRNSM_CrateStatus_enum
+* @note              none
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+uint8_t S_X_BAND_TRNSM_WriteFile (S_X_BAND_CMD_StackEntry *stackEntry) {
+    uint8_t retStat = 0x00;
+    uint16_t RxDataLenght;
+	printf("WRITE FILE !!!!!!!!!!!\n");
+    // Check for available retries
+    if (!stackEntry->retries) {
+        if (stackEntry->state != S_X_BAND_TRNSM_CMD_STATE_CMD_FINISHED) {
+            retStat = S_X_BAND_TRNSM_PARAMS_COMM_ERR;
+        }
+        return retStat;
+    }
+    // Check for command state
+    switch (stackEntry->state) {
+        case S_X_BAND_TRNSM_CMD_STATE_CMD:
+        case S_X_BAND_TRNSM_CMD_STATE_CMD_RES:
+			memcpy(stackEntry->ESTTC_data, &S_X_BAND_TRNSM_FileDataBuffer.Size, sizeof(uint16_t));
+			memcpy(&stackEntry->ESTTC_data[2], &stackEntry->fileHandler, sizeof(uint32_t)); //Data Packet Length
+			memcpy(&stackEntry->ESTTC_data[6], &S_X_BAND_TRNSM_FileDataBuffer.PacketNumber, sizeof(uint32_t)); //Data Packet Length + File Handle
+			memcpy(&stackEntry->ESTTC_data[10], S_X_BAND_TRNSM_FileDataBuffer.Data, sizeof(uint8_t) * S_X_BAND_TRNSM_FileDataBuffer.Size); //Data Packet Length + File Handle + Packet Number
+            retStat = S_X_BAND_TRNSM_SendCMD (S_X_BAND_TRNSM_CMD_WRITE_F, S_X_BAND_TRNSM_NULL_TYPE, stackEntry->ESTTC_data, S_X_BAND_TRNSM_FileDataBuffer.Size + 10);
+            if (S_X_BAND_TRNSM_STAT_ACK == retStat) {
+                stackEntry->minDelay = 1;
+                stackEntry->command = S_X_BAND_TRNSM_CMD_WRITE_F;
+                stackEntry->type = S_X_BAND_TRNSM_NULL_TYPE;
+                stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD_GETRESULT;
+                retStat = 0x00;
+            } else {
+				printf ("\r\n WRITE_F CMD ERROR = %d (retry No %d)\n", retStat, stackEntry->retries);
+                // Failed to send the command
+                if (S_X_BAND_TRNSM_STAT_COMM_ERR == retStat) {
+                        stackEntry->retries = 0;
+                        stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD_FINISHED;
+                        return S_X_BAND_TRNSM_PARAMS_COMM_ERR;
+                }
+                S_X_BAND_STACK_RETR_SUB (retStat != S_X_BAND_TRNSM_STAT_ACK && retStat != S_X_BAND_TRNSM_STAT_GET_RESULT, stackEntry);
+            }
+			break;
+        case  S_X_BAND_TRNSM_CMD_STATE_CMD_GETRESULT:
+        case  S_X_BAND_TRNSM_CMD_STATE_CMD_GETRESULT_RES:
+			retStat = S_X_BAND_TRNSM_GetResult ( stackEntry->command, stackEntry->type, S_X_BAND_TRNSM_Result_Rx_Buffer, &RxDataLenght) ;
+            if (S_X_BAND_TRNSM_STAT_GET_RESULT == retStat) {
+                retStat = S_X_BAND_TRNSM_SEND_CARD_ERR; //0xF1;
+                // Verify the answer
+                if (RxDataLenght == sizeof (retStat)) {
+                    // Get the status of the request
+                    retStat = S_X_BAND_TRNSM_Result_Rx_Buffer[0];
+                    // If the status is "OK"
+                    if (!retStat) {
+                        // On success move to the next packet
+                        S_X_BAND_TRNSM_FileDataBuffer.PacketNumber++;
+                        /* Set new position */
+                        S_X_BAND_TRNSM_UploadToXSBand_FPos += S_X_BAND_TRNSM_FileDataBuffer.Size;
+                        // Update the state
+                        stackEntry->state = S_X_BAND_TRNSM_CMD_STATE_CMD_FINISHED;
+						return retStat;
+                    } else {
+                        retStat = 0xF3;
+                    }
+                } else {
+                    retStat = 0xF5;
+                }
+            } else {
+                if (S_X_BAND_STACK_RETR_COND(retStat)) retStat = 0x00;
+                else {
+                    retStat = 0xF6;
+                }
+            }
+			if (retStat) {
+                printf ("\r\n WRITE_F GETRESULT ERROR = %.2X (retry No %d)\n", retStat, stackEntry->retries);
+				retStat = 0x00;
+            }
+            // Subtract the retry count
+            stackEntry->retries--;
+            break;
+        default:
+            break;
+    }
+    return retStat;
 }
 
 
@@ -360,7 +694,7 @@ S_X_BAND_TRNSM_Response_enum S_X_BAND_TRNSM_GetResult( S_X_BAND_TRNSM_CMD_enum C
 	DWORD RxBytes = 0;
 	DWORD BytesReceived = 0;
 	uint8_t RxBuffer[256] = {0};
-	printf("RESULT\n");
+
     if (!RxDataLenght) {
         /* Invalid data pointer */
         return S_X_BAND_TRNSM_STAT_WRONG_PARAM;
@@ -385,28 +719,21 @@ S_X_BAND_TRNSM_Response_enum S_X_BAND_TRNSM_GetResult( S_X_BAND_TRNSM_CMD_enum C
         TxDataBuffer[S_X_BAND_TRNSM_STRCT_SIZE] = (uint8_t)CMD_Type;
         TxDataBuffer[S_X_BAND_TRNSM_STRCT_SIZE+1] = (uint8_t)(CMD_Type>>8);
     } else {
-		printf("No length\n");
         TxPackStruct->Length = 0;
     }
-
+	printf("S_X_BAND_TRNSM_GetResult write\n");
     /* copy the structure of the packet to the transmit buffer */
     TxPackCRC = crc32 (0, (BYTE *)TxPackStruct, S_X_BAND_TRNSM_STRCT_SIZE + TxPackStruct->Length);
     /* copy the CRC to the transmit buffer after the structure of the packet */
     memcpy (&TxDataBuffer[S_X_BAND_TRNSM_STRCT_SIZE + TxPackStruct->Length], &TxPackCRC, sizeof (TxPackCRC));
+    if (((((S_X_BAND_TRNSM_STRCT_SIZE + TxPackStruct->Length + sizeof (TxPackCRC) - 1) >> 4) + 1) << 4) > sizeof (TxDataBuffer)) {
+        /* check if the transmit buffer is insufficient */
+        return S_X_BAND_TRNSM_STAT_WRONG_PARAM;
+    }
+    memset (&TxDataBuffer[S_X_BAND_TRNSM_STRCT_SIZE + TxPackStruct->Length + sizeof (TxPackCRC)], 0, ((((S_X_BAND_TRNSM_STRCT_SIZE + TxPackStruct->Length + sizeof (TxPackCRC) - 1) >> 4) + 1) << 4) - (S_X_BAND_TRNSM_STRCT_SIZE + TxPackStruct->Length + sizeof (TxPackCRC)));
+	bytesToWrite = (((S_X_BAND_TRNSM_STRCT_SIZE + TxPackStruct->Length + sizeof (TxPackCRC) - 1) >> 4) + 1) << 4;
     for (retries = 0; retries < S_X_BAND_TRNSM_TX_RETRY ;) {
-        if (((((S_X_BAND_TRNSM_STRCT_SIZE + TxPackStruct->Length + sizeof (TxPackCRC) - 1) >> 4) + 1) << 4) > sizeof (TxDataBuffer)) {
-            /* check if the transmit buffer is insufficient */
-            return S_X_BAND_TRNSM_STAT_WRONG_PARAM;
-        }
-        memset (&TxDataBuffer[S_X_BAND_TRNSM_STRCT_SIZE + TxPackStruct->Length + sizeof (TxPackCRC)], 0, ((((S_X_BAND_TRNSM_STRCT_SIZE + TxPackStruct->Length + sizeof (TxPackCRC) - 1) >> 4) + 1) << 4) - (S_X_BAND_TRNSM_STRCT_SIZE + TxPackStruct->Length + sizeof (TxPackCRC)));
-		bytesToWrite = (((S_X_BAND_TRNSM_STRCT_SIZE + TxPackStruct->Length + sizeof (TxPackCRC) - 1) >> 4) + 1) << 4;
 		purgeBuffer();
-
-		printf("Write\n");
-		for(int i = 0; i < bytesToWrite; i++){
-			printf("%.2X",TxDataBuffer[i]);
-		}		
-		printf("\n");
 		ftStatus = FT_Write(ftHandle, 
 							TxDataBuffer, 
 							bytesToWrite,
@@ -414,11 +741,6 @@ S_X_BAND_TRNSM_Response_enum S_X_BAND_TRNSM_GetResult( S_X_BAND_TRNSM_CMD_enum C
 		if (ftStatus == FT_OK) {
 			lenghtQueue(&RxBytes);
 			ftStatus = FT_Read(ftHandle,RxBuffer,RxBytes,&BytesReceived); 
-			printf("READ GET\n");
-			for(int i = 0; i < BytesReceived ; i++){
-				printf("%.2X",RxBuffer[i]);
-			}
-			printf("\n");
 			if (ftStatus == FT_OK && BytesReceived == RxBytes) {
 				//readPackStruct(RxPackStruct, RxBuffer);
 				memcpy(S_X_BAND_TRNSM_X_Band_Data, RxBuffer, BytesReceived);
@@ -427,13 +749,10 @@ S_X_BAND_TRNSM_Response_enum S_X_BAND_TRNSM_GetResult( S_X_BAND_TRNSM_CMD_enum C
 					(RxPackStruct->Header == TxPackStruct->Header) &&
 					(RxPackStruct->ModuleID == TxPackStruct->ModuleID)) 
 				{
-					printf("fdgfdgmmmm\n");
+					printf("S_X_BAND_TRNSM_GetResult read\n");
 					RxCRC = crc32 (0, S_X_BAND_TRNSM_X_Band_Data, S_X_BAND_TRNSM_STRCT_SIZE + RxPackStruct->Length);
-					printf("RxCRC %.8X\n", RxCRC);
 					pRxCRC = (uint32_t *)&S_X_BAND_TRNSM_X_Band_Data[S_X_BAND_TRNSM_STRCT_SIZE + RxPackStruct->Length];
-					printf("pRxCRC %.8X\n", *pRxCRC);
 					if (*pRxCRC == RxCRC) {
-						printf("ICICI/n");
 						if (RxPackStruct->Response == S_X_BAND_TRNSM_STAT_BUSY) {
 							sleep(TxCMD_BusyTimePeriod[CMD]);
 							break;
@@ -511,7 +830,8 @@ void  S_X_BAND_TRNSM_Send_Ack(S_X_BAND_TRNSM_CMD_enum CMD, uint16_t CMD_Type) {
     TxPackStruct->Response = S_X_BAND_TRNSM_STAT_ACK;
     TxPackStruct->CMD = TxCMD_Descriptor[CMD].CMD;
     TxPackStruct->Type = CMD_Type;
-
+	
+	printf("S_X_BAND_TRNSM_Send_Ack write\n");
     /* copy the structure of the packet to the transmit buffer */
     TxPackCRC = crc32(0, (BYTE *)TxPackStruct, S_X_BAND_TRNSM_STRCT_SIZE);
 
@@ -522,8 +842,12 @@ void  S_X_BAND_TRNSM_Send_Ack(S_X_BAND_TRNSM_CMD_enum CMD, uint16_t CMD_Type) {
     memcpy(&TxDataBuffer[S_X_BAND_TRNSM_STRCT_SIZE + TxPackStruct->Length], &TxPackCRC, sizeof(TxPackCRC));
 	bytesToWrite=(((S_X_BAND_TRNSM_STRCT_SIZE + sizeof(TxPackCRC))>>4)+1)<<4;
 	
+	purgeBuffer();
+	ftStatus = FT_Write(ftHandle, 
+						TxDataBuffer, 
+						bytesToWrite,
+						&bytesWritten);		
 }
-
 
 /*!
 *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -589,6 +913,7 @@ S_X_BAND_TRNSM_Response_enum S_X_BAND_TRNSM_SendCMD (S_X_BAND_TRNSM_CMD_enum CMD
     TxPackStruct->Response = 0;
     TxPackStruct->CMD = TxCMD_Descriptor[CMD].CMD;
     TxPackStruct->Type = CMD_Type;
+	printf("S_X_BAND_TRNSM_SendCMD write\n");
     if (TxPackStruct->Length > 0) {
         if (!TxData) {
             /* Invalid data pointer */
@@ -614,55 +939,54 @@ S_X_BAND_TRNSM_Response_enum S_X_BAND_TRNSM_SendCMD (S_X_BAND_TRNSM_CMD_enum CMD
 	
 	for (retries = 0; retries < S_X_BAND_TRNSM_TX_RETRY;) 
 	{
-
 		purgeBuffer();
-			
 		ftStatus = FT_Write(ftHandle, 
 							TxDataBuffer, 
 							bytesToWrite,
-							&bytesWritten);								
+							&bytesWritten);						
 		if (ftStatus == FT_OK) {
 			lenghtQueue(&RxBytes);
-			ftStatus = FT_Read(ftHandle,RxBuffer,RxBytes,&BytesReceived); 
-			printf("RFT_Read\n");
-			for(int i = 0; i < BytesReceived ; i++){
-				printf("%.2X",RxBuffer[i]);
-			}
-			printf("\n");
-			if (ftStatus == FT_OK && BytesReceived == RxBytes) {
-				memcpy(S_X_BAND_TRNSM_X_Band_Data, RxBuffer, BytesReceived);
-				// check for end of pack and verify the packet
-				if (
-					(RxPackStruct->Header == TxPackStruct->Header) &&
-					(RxPackStruct->ModuleID == TxPackStruct->ModuleID)){
-					printf("jdajdajda \n");
-					RxCRC = crc32 (0, S_X_BAND_TRNSM_X_Band_Data, S_X_BAND_TRNSM_STRCT_SIZE);
-					printf("RxCRC SEND CMD %.8X\n", RxCRC);
-					pRxCRC = (uint32_t *)&S_X_BAND_TRNSM_X_Band_Data[S_X_BAND_TRNSM_STRCT_SIZE];
-					printf("pRxCRC SEND CMD %.8X\n", *pRxCRC);
-					if (*pRxCRC == RxCRC) {
-						if (RxPackStruct->Response == S_X_BAND_TRNSM_STAT_ACK) {
-							retries = S_X_BAND_TRNSM_TX_RETRY;
-							printf("\n LA \n");
-							// exit the loop
+			if(RxBytes > 0)
+			{
+				ftStatus = FT_Read(ftHandle,RxBuffer,RxBytes,&BytesReceived); 
+				if (ftStatus == FT_OK && BytesReceived == RxBytes) {
+					memcpy(S_X_BAND_TRNSM_X_Band_Data, RxBuffer, BytesReceived);
+					// check for end of pack and verify the packet
+					if (
+						(RxPackStruct->Header == TxPackStruct->Header) &&
+						(RxPackStruct->ModuleID == TxPackStruct->ModuleID)){
+						printf("S_X_BAND_TRNSM_SendCMD Read\n");
+						RxCRC = crc32 (0, S_X_BAND_TRNSM_X_Band_Data, S_X_BAND_TRNSM_STRCT_SIZE);
+						pRxCRC = (uint32_t *)&S_X_BAND_TRNSM_X_Band_Data[S_X_BAND_TRNSM_STRCT_SIZE];
+						if (*pRxCRC == RxCRC) {
+							if (RxPackStruct->Response == S_X_BAND_TRNSM_STAT_ACK) {
+								retries = S_X_BAND_TRNSM_TX_RETRY;
+								// exit the loop
+							} else {
+								RxPackStruct->Response = S_X_BAND_TRNSM_STAT_NACK;
+								// retry - send the packet again
+							}
 						} else {
-							RxPackStruct->Response = S_X_BAND_TRNSM_STAT_NACK;
+							// wrong CRC
+							RxPackStruct->Response = S_X_BAND_TRNSM_STAT_COMM_ERR;
 							// retry - send the packet again
 						}
 					} else {
-						// wrong CRC
+						// wrong data structure
+						printf("No read\n");
 						RxPackStruct->Response = S_X_BAND_TRNSM_STAT_COMM_ERR;
 						// retry - send the packet again
 					}
-				} else {
-					// wrong data structure
+				}
+				else
+				{
+					printf("read error\n");
 					RxPackStruct->Response = S_X_BAND_TRNSM_STAT_COMM_ERR;
-					// retry - send the packet again
 				}
 			}
 			else
 			{
-				printf("read error\n");
+				printf("no read\n");
 				RxPackStruct->Response = S_X_BAND_TRNSM_STAT_COMM_ERR;
 			}
 		} else {
@@ -676,7 +1000,6 @@ S_X_BAND_TRNSM_Response_enum S_X_BAND_TRNSM_SendCMD (S_X_BAND_TRNSM_CMD_enum CMD
 		}
 	}
 	
-	printf("\n 1 \n");
     return (S_X_BAND_TRNSM_Response_enum)RxPackStruct->Response;
 
 }
