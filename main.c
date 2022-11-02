@@ -43,7 +43,29 @@
 
 #define ARRAY_SIZE(x) sizeof((x))/sizeof((x)[0])
 
+S_X_BAND_CMD_StackEntry stackEntry;
 
+void incr(uint8_t *s)
+{
+	int i, tail, len;
+	len = strlen(s);
+	//"Log_"
+	int index_begin = 4;
+	
+	/* find out how many digits need to be changed */
+	for (tail = len - 1; tail >= index_begin && s[tail] == '9'; tail--);
+	
+	if (tail < index_begin) {
+		/* special case: all 9s, string will grow */
+		s[index_begin] = '1';
+		for (i = index_begin + 1; i <= len; i++) s[i] = '0';
+		s[len + 1] = '\0';
+	} else { /* normal case; change tail to all 0, change prev digit by 1*/
+		for (i = len - 1; i > tail; i--)
+			s[i] = '0';
+		s[tail] += 1;
+	}
+}
 
 void reverse(char *x, int begin, int end)
 {
@@ -278,9 +300,6 @@ int main(int argc, char *argv[])
 	uint8_t dirTest [] = {0x45, 0x53, 0x55, 0x50, 0x07, 0x20, 0x00, 0x00, 0x00, 0x00, 0x02, 0x01, 0x00, 0x00, 0xBA, 0x70, 0x61, 0xB7,0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	uint8_t getDirTest [] = {0x45, 0x53, 0x55, 0x50, 0x07, 0x20, 0x00, 0x00, 0x00, 0x00, 0x14, 0x01, 0x02, 0x01, 0xED, 0x2A, 0x22, 0x87, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	//---------------------------------------------------------------------------------------------------//	
-	
-	static S_X_BAND_TRNSM_WriteFile_struct S_X_BAND_TRNSM_FileDataBuffer;
-	static uint32_t S_X_BAND_TRNSM_UploadToXSBand_FPos;
 	int        retCode = -1; // Assume failure
 	int        f = 0;
 	FT_STATUS  ftStatus = FT_OK;
@@ -374,8 +393,6 @@ int main(int argc, char *argv[])
 		goto exit;
 	// }*/
 	
-	printf("1\n");
-	printf("\n");
 	//---------------------------------------------------------------------------------------------------//		
 	
 	//-----------------------------------------------------------------------------------------------------------//
@@ -383,49 +400,111 @@ int main(int argc, char *argv[])
 	bytesToWrite=32;
 	RxBytes=32;
 	uint8_t retStat = 0x00;
-	uint8_t fileName [] = {0x4E, 0x65, 0x77, 0x5F, 0x46, 0x69, 0x6C, 0x65, 0x2E, 0x74, 0x78, 0x74, 0x00};
-	printf("2\n");
+	//uint8_t fileName [] = {0x4E, 0x65, 0x77, 0x5F, 0x46, 0x69, 0x6C, 0x65, 0x2E, 0x74, 0x78, 0x74, 0x00};
+	static uint8_t fileName [30] = {'L','o','g','_','0','\0'};
 	
 	memset (&stackEntry, 0x00, sizeof (S_X_BAND_CMD_StackEntry));
-	printf("20\n");
+
     stackEntry.devID = S_BAND_TRNSM_DEFAULT_DEV_ID;
     stackEntry.ESTTC_request = 0;
     stackEntry.isFileCommand = 1;
     stackEntry.ESTTC_request_type = 'W';
-    stackEntry.ESTTC_data_size = 13;
-    if (stackEntry.ESTTC_data_size > 0 && fileName != NULL) {
-        memcpy (stackEntry.ESTTC_data, fileName, stackEntry.ESTTC_data_size);
-    }
     stackEntry.console = NULL; // X_BAND_TRNSM_CMD_ESTTC_console;
     stackEntry.retries = S_X_BAND_TRNSM_CMD_RETRY;
     stackEntry.timestamp = 0; //xTaskGetTickCount(); // Not eligible for microseconds....
     stackEntry.minDelay = S_X_BAND_STACK_DELAY;
     stackEntry.state = S_X_BAND_TRNSM_CMD_STATE_CMD;
-	printf("8\n");
 	stackEntry.retries = 60;
-    stackEntry.command = S_X_BAND_TRNSM_CMD_CREATE_F;
     stackEntry.type = S_X_BAND_TRNSM_NULL_TYPE;
     stackEntry.expectSlaveCommand = 1;
 
+	stackEntry.command = S_X_BAND_TRNSM_CMD_DELL_ALL_F;
+	do
+	{
+		retStat = S_X_BAND_TRNSM_DelFile(&stackEntry);
+	} while (stackEntry.state != S_X_BAND_TRNSM_CMD_STATE_CMD_FINISHED);
+
+	if(!retStat)
+	{
+		printf ("Success erase %d (retry %d)\n", retStat, stackEntry.retries);
+	}
+	else
+	{
+		printf ("\r\n S_X_BAND_TRNSM_UploadToXSBand_State_CREATEFILE ERROR = %d (retry %d)\n", retStat, stackEntry.retries);
+		exit(0);
+	}
+	
 	stackEntry.fileSize = 10;
 	stackEntry.fileHandler = -1;
-	
-	retStat = S_X_BAND_TRNSM_CreateFile (&stackEntry);
-    if (retStat && stackEntry.fileHandler == -1)
+	stackEntry.retries = 60;
+	stackEntry.command = S_X_BAND_TRNSM_CMD_CREATE_F;
+    stackEntry.type = S_X_BAND_TRNSM_NULL_TYPE;
+	stackEntry.state = S_X_BAND_TRNSM_CMD_STATE_CMD;
+	do
 	{
-        printf ("\r\n S_X_BAND_TRNSM_UploadToXSBand_State_CREATEFILE ERROR = %d (retry No %d) (local retry %d)", retStat, stackEntry.retries);
-        retStat = 0x03;
-    }
-	retStat = S_X_BAND_TRNSM_CreateFile (&stackEntry);
-    if (!retStat && stackEntry.state == S_X_BAND_TRNSM_CMD_STATE_CMD_FINISHED) {
-		memset (&S_X_BAND_TRNSM_FileDataBuffer, 0x00, sizeof (S_X_BAND_TRNSM_FileDataBuffer));
-        S_X_BAND_TRNSM_FileDataBuffer.FileHandler = stackEntry.fileHandler;
-        S_X_BAND_TRNSM_UploadToXSBand_FPos = 0;
+		stackEntry.ESTTC_data_size = strlen(fileName) + 1;
+		memcpy (stackEntry.ESTTC_data, fileName, stackEntry.ESTTC_data_size);
+		retStat = S_X_BAND_TRNSM_CreateFile (&stackEntry);
+		retStat = S_X_BAND_TRNSM_CreateFile (&stackEntry);
+		incr(fileName);
+		printf("i\n");
+	} while(stackEntry.fileHandler == -1 && retStat != S_X_BAND_TRNSM_STAT_COMM_ERR);
+
+	printf("stackEntry.fileHandler != -1 : %i\n", stackEntry.fileHandler != -1);
+	printf("retStat != S_X_BAND_TRNSM_STAT_COMM_ERR : %i\n", retStat != S_X_BAND_TRNSM_STAT_COMM_ERR);
+	printf("retStat : %i\n", retStat );
+	
+	printf("\n");
+	for(int i = 0; i < strlen(fileName) + 1; i++){
+		printf("%.2X",fileName[i]);
 	}
+	printf("\n");		
 
+	if(!retStat && stackEntry.fileHandler != -1)
+	{
+        stackEntry.retries = S_X_BAND_TRNSM_CMD_RETRY;
+        stackEntry.state = S_X_BAND_TRNSM_CMD_STATE_CMD;
+        memset (&S_X_BAND_TRNSM_FileDataBuffer, 0x00, sizeof (S_X_BAND_TRNSM_FileDataBuffer));
+        S_X_BAND_TRNSM_FileDataBuffer.FileHandler = stackEntry.fileHandler;
+        S_X_BAND_TRNSM_UploadToXSBand_FPos = 0;	
+	}
+	else
+	{
+		printf ("\r\n S_X_BAND_TRNSM_UploadToXSBand_State_CREATEFILE ERROR = %d (retry %d)\n", retStat, stackEntry.retries);
+		exit(0);
+	}
+	S_X_BAND_TRNSM_FileDataBuffer.Size = 10;
+	for(int i = 0; i < S_X_BAND_TRNSM_FileDataBuffer.Size; i++)
+	{
+		S_X_BAND_TRNSM_FileDataBuffer.Data[i] = i + 1;	
+	}
+	do
+	{
+		retStat = S_X_BAND_TRNSM_WriteFile(&stackEntry);
+	} while (stackEntry.state != S_X_BAND_TRNSM_CMD_STATE_CMD_FINISHED);
+
+	if(!retStat)
+	{
+		printf ("Success %d (retry %d)\n", retStat, stackEntry.retries);
+		exit(0);
+	}
+	else
+	{
+		printf ("\r\n S_X_BAND_TRNSM_UploadToXSBand_State_CREATEFILE ERROR = %d (retry %d)\n", retStat, stackEntry.retries);
+		exit(0);
+	}
+	stackEntry.command = S_X_BAND_TRNSM_CMD_DIR_F;
+    stackEntry.retries = S_X_BAND_TRNSM_CMD_RETRY;
+    stackEntry.state = S_X_BAND_TRNSM_CMD_STATE_CMD;
+	stackEntry.type = S_X_BAND_TRNSM_NULL_TYPE;
+    stackEntry.minDelay = 250;
+	exit(0);
+	
 	//!!!!!!!!! Essai d'ouverture du fichier créé, suivi d'une écriture puis lecture pour vérification !!!!!!!!!//
-
-	// retStat = S_X_BAND_TRNSM_OpenFile (&stackEntry);		  
+	
+	// retStat = S_X_BAND_TRNSM_OpenFile (&stackEntry);
+	
+		  
 	// retStat = S_X_BAND_TRNSM_OpenFile (&stackEntry);
 	// if (!retStat && stackEntry.state == S_X_BAND_TRNSM_CMD_STATE_CMD_FINISHED) {
 		 
@@ -451,9 +530,6 @@ int main(int argc, char *argv[])
 	// stackEntry->command = S_X_BAND_TRNSM_CMD_READ_F;
 	// retStat = S_X_BAND_TRNSM_SendCMD (XSBandStack_Slave.devID, S_X_BAND_TRNSM_CMD_READ_F, S_X_BAND_TRNSM_NULL_TYPE, (uint8_t *)&XSBandStack_Slave.fileHandler, sizeof (XSBandStack_Slave.fileHandler));
 	
-	if (!retStat && stackEntry.state == S_X_BAND_TRNSM_CMD_STATE_CMD_FINISHED) {
-		printf("\r\n S_X_BAND_TRNSM_UploadToXSBand_State_CREATEFILE ERROR = %d (retry No %d) (local retry %d)", retStat, stackEntry.retries - 1);
-	}
 	printf("5\n");
 	lenghtQueue(&RxBytes);
 	printf("Bytes red  : %i\n", RxBytes);
