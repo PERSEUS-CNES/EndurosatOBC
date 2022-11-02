@@ -31,4 +31,6 @@ La documentation fournisseur **Endurosat** est disponible dans le répertoire `S
 - Guide de programmation du FTDI USB-RS485 `D2XX_Programmers_Guide.pdf`
 - Code de référence implémentant une machine à état avec toutes les fonctions **uniquement fonctionnel sur microcontrolleur** `S-band reference code`
 ### Remember PERSEUS's motto _**"TO INFINITY AND BEYOND"**_
-![PERSEUS Logo](/index.png)
+<p align="center">
+  <img src="/index.jpg">
+</p>
