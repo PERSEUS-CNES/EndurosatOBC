@@ -1,0 +1,6 @@
+/home/pi/EndurosatOBCv2/sbgECom/projects/unix/CMakeFiles/edit_cache.dir
+/home/pi/EndurosatOBCv2/sbgECom/projects/unix/CMakeFiles/rebuild_cache.dir
+/home/pi/EndurosatOBCv2/sbgECom/projects/unix/CMakeFiles/ellipseOnboardMagCalib.dir
+/home/pi/EndurosatOBCv2/sbgECom/projects/unix/CMakeFiles/ekinoxMinimal.dir
+/home/pi/EndurosatOBCv2/sbgECom/projects/unix/CMakeFiles/ellipseMinimal.dir
+/home/pi/EndurosatOBCv2/sbgECom/projects/unix/CMakeFiles/sbgECom.dir

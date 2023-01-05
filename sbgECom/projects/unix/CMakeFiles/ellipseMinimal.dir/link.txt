@@ -1,0 +1,1 @@
+/usr/bin/cc -rdynamic CMakeFiles/ellipseMinimal.dir/home/pi/EndurosatOBCv2/sbgECom/examples/ellipseMinimal/src/ellipseMinimal.c.o -o /home/pi/EndurosatOBCv2/sbgECom/bin/ellipseMinimal  /home/pi/EndurosatOBCv2/sbgECom/bin/libsbgECom.a 

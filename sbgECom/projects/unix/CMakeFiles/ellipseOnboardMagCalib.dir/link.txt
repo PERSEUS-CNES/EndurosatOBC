@@ -1,0 +1,1 @@
+/usr/bin/cc -rdynamic CMakeFiles/ellipseOnboardMagCalib.dir/home/pi/EndurosatOBCv2/sbgECom/examples/ellipseOnboardMagCalib/src/ellipseOnboardMagCalib.c.o -o /home/pi/EndurosatOBCv2/sbgECom/bin/ellipseOnboardMagCalib  /home/pi/EndurosatOBCv2/sbgECom/bin/libsbgECom.a 
