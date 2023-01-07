@@ -13,8 +13,10 @@ CC=gcc
 SRC_DIR = .
 SRCS = \
 main.c \
-simpleEndurosat.c \
-es_crc32.c
+emitterV1.c \
+es_crc32.c 
+
+
 
 INCS_DIR = . 
 
@@ -29,7 +31,7 @@ pthread rt dl
 
 CFLAGS = \
 ${INCS_DIR:%=-I%} \
--Wall -Wextra
+-Wall -Wextra -g
 
 LDFLAGS = \
 $(LIBS_DIR:%=-L%) 
