@@ -137,7 +137,7 @@ void lenghtQueue(DWORD* RxBytes)
 
 //lis la partie data du buffer
 
-uint8_t readData(uint8_t buffer[] , uint8_t * * data)
+uint8_t readData(uint8_t buffer[] , uint8_t * * data_target)
 {
     uint16_t data_lenght;
     
@@ -147,9 +147,9 @@ uint8_t readData(uint8_t buffer[] , uint8_t * * data)
 
     //printf(" taille donne %d\n",(int)data_lenght);
     // recupere les données a chaque case de la partie data du buffer
-	*data = malloc(sizeof(uint8_t)*data_lenght);
+	*data_target = malloc(sizeof(uint8_t)*data_lenght);
     //printf("data ");
-	memcpy(*data,buffer + 14, sizeof(uint8_t)*data_lenght);
+	memcpy(*data_target,buffer + 14, sizeof(uint8_t)*data_lenght);
     
     //printf("\n");
     return 0;
@@ -384,7 +384,7 @@ uint8_t send_GetResult_request(uint8_t command_size,
 	lenghtQueue(&RxBytes);
 	
 	//uint8_t Handle[] = {0x00, 0x00, 0x00, 0x00};
-//	uint8_t data_read;
+	uint8_t * data_read;
  
    
 
@@ -394,15 +394,14 @@ uint8_t send_GetResult_request(uint8_t command_size,
 		if (ftStatus == FT_OK) {
 			if (BytesReceived == RxBytes) {
 				// FT_Read OK
-			printf("\nBytes red gt : %i\n", RxBytes);
-			//patternCutHandle(&RxBytes,RxBuffer,&Handle);
-            //data_read = readData(RxBuffer);
-            printf("Reponse : ");
-           for(int i = 0; i < 256; i++)
-           {
-             printf("%.2X ",RxBuffer[i]); 
-           }
-           printf("\n");
+				printf("\nBytes red gt : %i\n", RxBytes);
+				//patternCutHandle(&RxBytes,RxBuffer,&Handle);
+            	data_read = readData(RxBuffer,&data_read);
+				if(data_read[0] != 0x00 && data_read[1] != 0x00) // getResult renvoie un succès avec 00
+				{
+					printf("get result pour la commande create file renvoie une erreur \n");
+					return 0;
+				}
 			}
 		}		
 	}
@@ -428,7 +427,7 @@ uint8_t send_GetResult_request(uint8_t command_size,
 	}*/
 	
 	usleep(2000);	
-    return 0;
+    return 1;
 }
 
 uint8_t createFile(char name[]) // constitue la commande pour créer un fichier et l'envoie à l'emetteur
@@ -472,7 +471,7 @@ uint8_t createFile(char name[]) // constitue la commande pour créer un fichier 
     data_lenght = 0;
     printf("send getResult pour la création du fichier \n");
     status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type);    
-    if(status !=0)
+    if(!status)  // si getResult envoie 0, signifiant un echec
         return 0;
         
     printf("send getResult  à  marché\n");
