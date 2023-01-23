@@ -12,7 +12,7 @@ void lenghtQueue(DWORD* RxBytes);
 
 void byteFlip(uint16_t * two_byte_int);
 
-uint8_t * readData(uint8_t buffer[]);
+uint8_t readData(uint8_t buffer[]);
 uint8_t send_command_request(uint8_t command_size, 
                                 uint32_t header,
                                 uint16_t id,
