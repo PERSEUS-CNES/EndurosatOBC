@@ -137,22 +137,29 @@ void lenghtQueue(DWORD* RxBytes)
 
 //lis la partie data du buffer
 
-uint8_t readData(uint8_t buffer[] , uint8_t * * data_target)
+void readData(uint8_t buffer[] , uint8_t * data_target)
 {
     uint16_t data_lenght;
     
     //recupere la taille de la partie data a la position 6 et 7 du buffer
     //data_lenght = 0*buffer[7] + buffer[6]; 
 	memcpy(&data_lenght,buffer + 6,sizeof(uint16_t));
+	printf("\n  	data lenght %d ;\n",(int)data_lenght);
 
     //printf(" taille donne %d\n",(int)data_lenght);
     // recupere les données a chaque case de la partie data du buffer
-	*data_target = malloc(sizeof(uint8_t)*data_lenght);
+	//*data_target = malloc(sizeof(uint8_t)*data_lenght);
     //printf("data ");
-	memcpy(*data_target,buffer + 14, sizeof(uint8_t)*data_lenght);
-    
+	//memcpy(data_target,buffer + 14, sizeof(uint8_t)*data_lenght);
+	for(int i = 0; i < data_lenght; i ++)
+	{
+		data_target[i] = buffer[14 + i];
+	}
+	printf("data : ");
+	for(int i = 0; i < data_lenght; i++ ){
+	printf("%d , ",(int)data_target[i]);}
+    printf(";\n");
     //printf("\n");
-    return 0;
 }
 
 void byteFlip(uint16_t * two_byte_int)
@@ -272,8 +279,17 @@ uint8_t send_command_request(uint8_t command_size,
 		if (BytesReceived == RxBytes) {
 			// FT_Read OK
 			printf("Bytes red : %i\n", RxBytes);
+			
 			//patternCut(&RxBytes,RxBuffer);
 		}
+		else
+		{
+			printf("rxbytes pas egal bytes recieved");
+		}
+	}
+	else
+	{
+		printf("ftstatus pas ok");
 	}
 	
 	
@@ -285,6 +301,12 @@ uint8_t send_command_request(uint8_t command_size,
 		if (BytesReceived == RxBytes) {
 			// FT_Read OK
 			printf("\nBytes red : %i \n", RxBytes);
+			printf("Reponse Commande : ");
+			for(int i = 0; i < BytesReceived; i++)
+			{
+				printf("%d ",(int)RxBuffer[i]);
+			}
+			printf("\n");
 			//patternCut(&RxBytes,RxBuffer);
 		}
 		
@@ -300,7 +322,8 @@ uint8_t send_GetResult_request(uint8_t command_size,
                                 uint16_t data_lenght,
                                 uint16_t command_status,
                                 uint16_t command,
-                                uint16_t type)
+                                uint16_t type,
+								uint8_t * reponse)
 {
     uint32_t crc=0;
     DWORD bytesToWrite = 0;
@@ -368,7 +391,7 @@ uint8_t send_GetResult_request(uint8_t command_size,
 	if (ftStatus != FT_OK) 
 	{
 		printf("Failure.  FT_Write returned %d\n", (int)ftStatus);
-		return 2;
+		//return 0;
 	}
 	
 	if (bytesWritten != bytesToWrite)
@@ -384,7 +407,7 @@ uint8_t send_GetResult_request(uint8_t command_size,
 	lenghtQueue(&RxBytes);
 	
 	//uint8_t Handle[] = {0x00, 0x00, 0x00, 0x00};
-	uint8_t * data_read;
+//	uint8_t data_read;
  
    
 
@@ -394,17 +417,29 @@ uint8_t send_GetResult_request(uint8_t command_size,
 		if (ftStatus == FT_OK) {
 			if (BytesReceived == RxBytes) {
 				// FT_Read OK
-				printf("\nBytes red gt : %i\n", RxBytes);
-				//patternCutHandle(&RxBytes,RxBuffer,&Handle);
-            	data_read = readData(RxBuffer,&data_read);
-				if(data_read[0] != 0x00 && data_read[1] != 0x00) // getResult renvoie un succès avec 00
-				{
-					printf("get result pour la commande create file renvoie une erreur \n");
-					return 0;
-				}
+			printf("\nBytes red gt : %i\n", RxBytes);
+			//patternCutHandle(&RxBytes,RxBuffer,&Handle);
+            //data_read = readData(RxBuffer);
+            printf("Reponse : ");
+           for(int i = 0; i < 256; i++)
+           {
+             printf("%.2X ",RxBuffer[i]); 
+           }
+		   printf("\n");
+		   readData(RxBuffer,reponse);
+           
 			}
 		}		
 	}
+	
+
+	/*if(reponse[0] != 0)
+	{
+
+		printf("Erreur, %d renvoyé\n",reponse[0]);
+
+		return 0;
+	}*/
 	
 	usleep(100);
 	RxBytes=command_size;
@@ -412,25 +447,34 @@ uint8_t send_GetResult_request(uint8_t command_size,
 	lenghtQueue(&RxBytes);
 	
 
-	/*if (RxBytes) {
+	if (RxBytes) {
 	
 		ftStatus = FT_Read(ftHandle,RxBuffer,RxBytes,&BytesReceived);
 		if (ftStatus == FT_OK) {
 			if (BytesReceived == RxBytes) {
 					// FT_Read OK
 			printf("\nBytes red gt 2 : %i\n", RxBytes);
+			printf("Reponse : ");
+           for(int i = 0; i < 256; i++)
+           {
+             printf("%.2X ",RxBuffer[i]); 
+           }
+		   printf("\n");
+			readData(RxBuffer,reponse);
 			//patternCutHandle(&RxBytes,RxBuffer,&Handle);
             
 			}
 		}
 	
-	}*/
+	}
+	else
+		printf("pas de 2nd réponse\n");
 	
 	usleep(2000);	
     return 1;
 }
 
-uint8_t createFile(char name[]) // constitue la commande pour créer un fichier et l'envoie à l'emetteur
+uint8_t createFile(char name[], char fileHandle[]) // constitue la commande pour créer un fichier et l'envoie à l'emetteur
 {
     //header 0x45535550
     //Module id 0xXXXX
@@ -447,6 +491,7 @@ uint8_t createFile(char name[]) // constitue la commande pour créer un fichier 
     uint16_t command_status = 0x0000;
     uint16_t command = 0x0106;
     uint16_t type = 0x0000;
+	uint8_t  data_read[10];
 
     uint8_t *  data = malloc(sizeof(uint8_t)*(data_lenght));
 
@@ -461,7 +506,8 @@ uint8_t createFile(char name[]) // constitue la commande pour créer un fichier 
 
     printf("Création du fichier %s\n", name);
     status = send_command_request(comm_lenght,header,id,data_lenght,command_status,command,type,data);
-    if(!status)
+    free(data);
+	if(!status)
         return 0;
         
     printf("commande de creation du fichier à  marchée\n");
@@ -470,11 +516,264 @@ uint8_t createFile(char name[]) // constitue la commande pour créer un fichier 
     comm_lenght = 32;
     data_lenght = 0;
     printf("send getResult pour la création du fichier \n");
-    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type);    
-    if(!status)  // si getResult envoie 0, signifiant un echec
+    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_read);    
+  
+    if(!status)
         return 0;
         
     printf("send getResult  à  marché\n");
+	printf("create result %2.X\n",(int)data_read[0]);
+	if(data_read[0] == 0x00)
+	{
+		printf("le fichier à été créé; handle : \n");
+		for(int i = 0; i < 4; i++)
+		{
+			fileHandle[i] = data_read[1+i];
+			printf("%2.X",fileHandle[i]);
+
+		}
+	}
+	else
+	{
+		printf("echec dans la création du fichier\n");
+		return 0;
+	}
     return 1;
  
+}
+
+uint8_t deleteAllFiles()
+{
+	//header 0x45535550
+    //Module id 0xXXXX
+    //data lenght  0x0000
+    //command status 0x0000
+    //command 0x0105
+    //type 0x0000
+    //data
+    //crc
+
+	uint32_t header = 0x50555345;//0x45 53 55 50;
+    uint16_t id = EMITTER_ID;
+    uint16_t data_lenght = 0x0000;
+    uint16_t command_status = 0x0000;
+    uint16_t command = 0x0105;
+    uint16_t type = 0x0000;
+	uint8_t *  data = {0x00};
+
+	uint8_t status = 0;
+
+	uint8_t comm_lenght = 32;
+	printf("SUPRESSION DE TOUT LES FICHIERS\n");
+	status = send_command_request(comm_lenght,header,id,data_lenght,command_status,command,type,data);
+
+	if(!status)
+	{
+		printf("fail commande\n");
+		//return 0;
+	}
+
+	type = command;
+	command = 0x0114;
+	uint8_t data_read[10];
+	printf("Get result\n");
+	status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_read);
+	printf("del result %d \n",(int)data_read[0]);
+	if(!status)
+	{
+		printf("fail get result\n");
+	}
+
+	return 1;
+
+}
+
+uint8_t writeInFile(char fileHandle[], char content[])
+{
+	//header 0x45535550
+    //Module id 0xXXXX
+    //data lenght  2 (taille des données) + 4 (handle) + 4 ( nb packet) + N(données)
+    //command status 0x0000
+    //command 0x0105
+    //type 0x0000
+    //data
+    //crc
+
+	uint32_t header = 0x50555345;//0x45 53 55 50;
+    uint16_t id = EMITTER_ID;
+    
+    uint16_t command_status = 0x0000;
+    uint16_t command = 0x0107;
+    uint16_t type = 0x0000;
+	uint8_t *  data;
+	uint16_t content_size = strlen(content); 
+	uint16_t data_lenght = 10 + content_size;
+	printf("\ncontent %s data_len = %d\n",content, (int)content_size);
+	data = malloc(sizeof(uint8_t)*(data_lenght));
+	uint8_t comm_lenght = 32 + data_lenght;
+	//byteFlip(&content_size);
+	//memcpy(data,name,sizeof(uint8_t)*data_lenght);
+	memcpy(data,&content_size, sizeof(uint16_t));
+	//byteFlip(&content_size);
+	memcpy(data + 2, fileHandle,sizeof(uint8_t)*4);
+	uint32_t packetNb = 0;
+	memcpy(data + 6,&packetNb, sizeof(uint32_t));
+	for(int i = 0; i < content_size; i++)
+	{
+		data[i + 10] = content[i];
+	}
+
+	for(int i = 0; i < 10 + content_size; i++)
+	{
+		printf("%d ",(int)data[i]);
+	}
+	printf("\n");
+
+	uint8_t status = 0;
+	printf("ECRITURE\n");
+	status = send_command_request(comm_lenght,header,id,data_lenght,command_status,command,type,data);
+	free(data);
+	if(!status)
+	{
+		printf("fail commande\n");
+		//return 0;
+	}
+	//4553555006201700000014010701
+	data_lenght = 0;
+	type = command;
+	command = 0x0114;
+	uint8_t data_read[10];
+	printf("Get result\n");
+	comm_lenght = 32;
+	status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_read);
+	printf("write result %d \n",(int)data_read[0]);
+	if(!status)
+	{
+		printf("fail get result\n");
+	}
+
+	return 1;	
+}
+
+uint8_t openFile(char name[], char fileHandle[])
+{
+	//header 0x45535550
+    //Module id 0xXXXX
+    //data lenght  size du name
+    //command status 0x0000
+    //command 0x0106
+    //type 0x0000
+    //data
+    //crc
+
+    uint32_t header = 0x50555345;//0x45 53 55 50;
+    uint16_t id = EMITTER_ID;
+    uint16_t data_lenght = strlen(name);
+    uint16_t command_status = 0x0000;
+    uint16_t command = 0x0108;
+    uint16_t type = 0x0000;
+	uint8_t  data_read[10];
+
+    uint8_t *  data = malloc(sizeof(uint8_t)*(data_lenght));
+
+    uint8_t status = 0;
+
+
+    int comm_lenght = 48;
+    memcpy(data,name,sizeof(uint8_t)*data_lenght);
+    //data[data_lenght + 1] = 0x0A;
+    //data_lenght  =+ 1;
+    
+
+    printf("Ouverture du fichier %s\n", name);
+    status = send_command_request(comm_lenght,header,id,data_lenght,command_status,command,type,data);
+    free(data);
+	if(!status)
+        return 0;
+        
+    printf("commande d'ouverture du fichier à  marchée\n");
+    type = command;
+    command = 0x0114;
+    comm_lenght = 32;
+    data_lenght = 0;
+    printf("send getResult pour l'ouverture du fichier \n");
+    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_read);    
+  
+    if(!status)
+        return 0;
+        
+    printf("send getResult  à  marché\n");
+	printf("open result %2.X\n",(int)data_read[0]);
+	if(data_read[0] == 0x00)
+	{
+		printf("le fichier à été ouvert; handle : \n");
+		for(int i = 0; i < 4; i++)
+		{
+			fileHandle[i] = data_read[1+i];
+			printf("%d ",fileHandle[i]);
+
+		}
+		printf("\n");
+	}
+	else
+	{
+		printf("echec dans l'ouverture du fichier\n");
+		return 0;
+	}
+    return 1;
+
+}
+
+uint8_t readFile(char fileHandle[], char lecture[])
+{
+	uint32_t header = 0x50555345;//0x45 53 55 50;
+    uint16_t id = EMITTER_ID;
+    uint16_t data_lenght = 0X0004;
+    uint16_t command_status = 0x0000;
+    uint16_t command = 0x0109;
+    uint16_t type = 0x0000;
+	uint8_t * data = malloc(sizeof(uint8_t)*data_lenght);
+
+	uint8_t comm_lenght = 48;
+	uint8_t status = 0;
+	memcpy(data,fileHandle,sizeof(uint8_t)*data_lenght); 
+
+	printf("lecture");
+    status = send_command_request(comm_lenght,header,id,data_lenght,command_status,command,type,data);
+    free(data);
+	if(!status)
+        return 0;
+        
+    printf("commande de lecture du fichier à  marchée\n");
+    type = command;
+    command = 0x0114;
+    comm_lenght = 32;
+    data_lenght = 0;
+    printf("send getResult pour la lecture du fichier \n");
+    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,lecture);    
+  
+    if(!status)
+        return 0;
+        
+    printf("send getResult  à  marché\n");
+	printf("read result %d\n",(int)lecture[0]);
+	if(lecture[0] == 0x00 || 1)
+	{
+		printf("le fichier à été lu; texte : \n");
+		for(int i = 0; i < 256; i++)
+		{
+			printf("%c ",lecture[i]);
+
+		}
+		printf("\n");
+	}
+	else
+	{
+		printf("echec dans l'ouverture du fichier\n");
+		return 0;
+	}
+    return 1;
+
+
+	
 }
