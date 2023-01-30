@@ -391,4 +391,6 @@ sbgEComLib.h
 /home/pi/EndurosatOBCv2/sbgECom/examples/ellipseMinimal/src/sbgEComLib.h
 time.h
 /home/pi/EndurosatOBCv2/sbgECom/examples/ellipseMinimal/src/time.h
+stdio.h
+-
 

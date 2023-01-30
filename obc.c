@@ -15,6 +15,7 @@
 #include "obc.h"							// Déclaration du header du projet
 #include "storage_manager.h"
 #include "ftdi_manager.h"
+//#include "sbgECom.h"
 
 //Déclaration des variables de temps 
 struct timeval startoum,										// Variable stockant la valeur de la date début du programme
