@@ -12,14 +12,15 @@
 #include <errno.h>								// Error number for debuging 
 #include <inttypes.h>							// fprintf(), fscanf()
 #include <math.h>								// Mathematics functions the GNC 
-#include <malloc.h>								// Malloc() pour l'attribution dynamique de mÃ©moire des buffers 
+#include <malloc.h>								// Malloc() pour l'attribution dynamique de mémoire des buffers 
 #include <sched.h>								// Defines the sched_param structure for scheduling threads 
 #include <signal.h>								// SIG_ERR : return value from signal() in case of error for debuging 
 #include <assert.h>								// Verify assumptions made by the program and print a diagnostic message if this assumption is false
 #include <fcntl.h>								// Manipulate file descriptor with open()
 #include <stdbool.h>
 #include <sys/time.h>
-#include <pthread.h>							// Threads pour le lancement en parallÃ¨le de plusieurs fonctions 
+#include <pthread.h>							// Threads pour le lancement en parallèle de plusieurs fonctions 
+#include <centrale.h>
 
 //! User parameter 					Value				Access						Description
 #define Xlink_verbose 				0					// 							Print informations in the console or not (0 : OFF / 1 : ON)
@@ -40,9 +41,10 @@ extern struct timeval endoum;
 extern long long unsigned start_time;
 extern struct tm *tm_T0;
 
+
 /*! -----------------------------------------------   Prototype   -----------------------------------------------*/
 
-// Fonctionnement gÃ©nÃ©ral et rÃ©cupÃ©ration des donnÃ©es USB 
+// Fonctionnement général et récupération des données USB 
 void saisie_utilisateur(long long unsigned int* temps_acquisition, int* nb_essais_total);
 void transfer(long long unsigned int* temps_acquisition);
 #endif

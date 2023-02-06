@@ -67,7 +67,6 @@ void connexion_peripherique() {
 
 void ouverture_initiale_stockage() {
 	variables_stockage.fichier_annexe = fopen("Data/annexe_fichiers.txt", "a");
-	
 	if (foundModules.Xsens1_trouve == 1) {
 		sprintf(variables_stockage.nom_fichier, "Data/Xsens1_%d.bin", variables_stockage.compteur_fichiers); // On ouvre le fichier Xsens
 		variables_stockage.fichier_donnees_Xsens1 = fopen(variables_stockage.nom_fichier, "a");

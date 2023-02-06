@@ -24,7 +24,8 @@ obc.c \
 ftdi_manager.c\
 storage_manager.c\
 endurosat_manager.c \
-es_crc32.c 
+es_crc32.c \
+centrale.c
 
 SRCS_SBG = \
 $(wildcard **/*.c $(foreach fd, $(SUBDIR), $(fd)/*.c))

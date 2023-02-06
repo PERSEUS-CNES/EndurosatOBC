@@ -11,17 +11,22 @@
 //
 
 //Déclaration des libraries 
-#define _GNU_SOURCE     										// Accès à des fonctions non portables, hors POSIX  
+#define _GNU_SOURCE    										// Accès à des fonctions non portables, hors POSIX  
 #include "obc.h"							// Déclaration du header du projet
 #include "storage_manager.h"
 #include "ftdi_manager.h"
-#include "sbgEComLib.h"
+
+
 
 //Déclaration des variables de temps 
 struct timeval startoum,										// Variable stockant la valeur de la date début du programme
 			   endoum;											// Variable stockant la valeur de la date fin du programme	
 
+
+ 
 long long unsigned start_time = 0;
+
+
 
 void transfer(long long unsigned int* temps_acquisition) { 
 
@@ -170,11 +175,24 @@ void set_thread_param(pthread_attr_t* tattr)
 
 // Fonction principale du programme de l'OBC 
 int main()
-{
-	int nb_essais = 0, nb_essais_total = 0;
-	long long unsigned int temps_acquisition = 0;
+{  
+      main_centrale();
+			while (1)
+			{
+				}
 
-	int err = 0;												// Booléen indiquant si une erreur a été rencontrée lors du lancement d'un thread
+			//
+			// Close the sbgEcom library
+			//
+
+	//
+	// Returns -1 if we have an error
+	//
+	///return retValue;
+ ///}
+ //////}
+  //}
+	/*int err = 0;												// Booléen indiquant si une erreur a été rencontrée lors du lancement d'un thread
 	//Paramètres de priorité du scheduleur pour les threads 
 	pthread_attr_t tattr1;	
 	// Création d'un attribut de thread
@@ -216,8 +234,7 @@ int main()
 	printf("Le programme a maintenant %u peripherique(s) connectes \n", foundModules.nb_peripheriques);
 	saisie_utilisateur(&temps_acquisition, &nb_essais_total);
 	printf("temps_acquisition = %lli s, nb_essais_total = %i \n", temps_acquisition, nb_essais_total);	
-		
-	ouverture_initiale_stockage();
+	//ouverture_initiale_stockage();
 	//Boucle principale du programme faisant l'acquisition des données USB
 	for (nb_essais = 0; nb_essais < nb_essais_total; nb_essais++) {
 		printf("passe %d sur %d\n", nb_essais + 1, nb_essais_total);
@@ -225,9 +242,11 @@ int main()
 		//!Transfert des données acquises
 		transfer(&temps_acquisition); 
 	}
-	fermeture_fichiers();
+	//fermeture_fichiers();
+ 
+   
 	
 	printf("Fermeture sans probleme\n\a");						// Sert a faire un bruit si une console est ouverte pour indiquer la fin de l'acquisition
 	
-	return(0);													// Termine l'exécution du programme sans erreur avec le code 0 
+	return(0);				*/									// Termine l'exécution du programme sans erreur avec le code 0 
 }
