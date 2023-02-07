@@ -144,6 +144,10 @@ void readData(uint8_t buffer[] , uint8_t * data_target)
 	memcpy(&data_lenght,buffer + 6,sizeof(uint16_t));
 
     // recupere les données a chaque case de la partie data du buffer
+	if(data_lenght == 0)
+	{
+		data_target[0] = 0x00;
+	}
 	for(int i = 0; i < data_lenght; i ++)
 	{
 		data_target[i] = buffer[14 + i];
@@ -442,7 +446,7 @@ uint8_t createFile(char name[], char fileHandle[]) // constitue la commande pour
 	// construction de la commande à partir des informations récupérées de la documentation de l'emetteur
     uint32_t header = 0x50555345;//0x45 53 55 50;
     uint16_t id = EMITTER_ID;
-    uint16_t data_lenght = strlen(name);
+    uint16_t data_lenght = strlen(name)+1;
     uint16_t command_status = 0x0000;
     uint16_t command = 0x0106; // commande createFile
     uint16_t type = 0x0000;
@@ -540,7 +544,8 @@ uint8_t deleteAllFiles()
 
 }
 
-uint8_t writeInFile(char fileHandle[], char content[])
+
+uint8_t writeInFile(char fileHandle[], char content[], uint32_t packetNb)
 {
 	//header 0x45535550
     //Module id 0xXXXX
@@ -563,7 +568,7 @@ uint8_t writeInFile(char fileHandle[], char content[])
 
 	printf("\ncontent %s data_len = %d\n",content, (int)content_size);
 	
-	uint32_t packetNb = 0; 
+	//uint32_t packetNb = 0; 
 	data = malloc(sizeof(uint8_t)*(data_lenght));
 	uint8_t comm_lenght = 32 + data_lenght;
 
@@ -621,7 +626,7 @@ uint8_t openFile(char name[], char fileHandle[])
 
     uint32_t header = 0x50555345;//0x45 53 55 50;
     uint16_t id = EMITTER_ID;
-    uint16_t data_lenght = strlen(name);
+    uint16_t data_lenght = strlen(name)+1;
     uint16_t command_status = 0x0000;
     uint16_t command = 0x0108;
     uint16_t type = 0x0000;
