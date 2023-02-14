@@ -3,6 +3,7 @@
 
 
 #define EMITTER_ID 0x2006 // id de l'emetteur
+#define EMITTER_HEADER 0x50555345 // header des commandes
 
 extern FT_HANDLE  ftHandle;
 

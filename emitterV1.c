@@ -240,60 +240,90 @@ uint8_t send_command_request(uint8_t command_size,
     }
     printf("\n");
 
-  
+	uint8_t send = 0x01; // true
 	// sending the command
-	purgeBuffer();
+	while(send)
+	{
+		send = 0x00; // false
+		purgeBuffer();
 	
-	// envoie la commande via l'adaptateur RS485
-	ftStatus = FT_Write(ftHandle, 
-	                    command_buffer,
-	                    bytesToWrite, 
-	                    &bytesWritten);
+		// envoie la commande via l'adaptateur RS485
+		ftStatus = FT_Write(ftHandle, 
+	            	        command_buffer,
+	        	            bytesToWrite, 
+	    	                &bytesWritten);
  
-	if (ftStatus != FT_OK) // vérifie que le module RS485 a bien envoyé la commande
-	{
-		printf("Failure.  FT_Write returned %d\n", (int)ftStatus);
-		return 0;// error in the process of writing the command
-	}
-    if (bytesWritten != bytesToWrite)// vérifie que la commande à été entièrement envoyée
-	{
-		printf("Failure.  FT_Write wrote %d bytes instead of %d.\n",
-		       (int)bytesWritten, 
-		       (int)bytesToWrite);
-		return 0;
-	}
-
-    printf("Successfully wrote %d bytes\n", (int)bytesWritten);
- 
-	/*if (ftStatus == FT_OK) {
-		if (BytesReceived == RxBytes) {
-			printf("Bytes red : %i\n", RxBytes);
-
-		}
-		else
+		if (ftStatus != FT_OK) // vérifie que le module RS485 a bien envoyé la commande
 		{
-			printf("Erreur : reception de bytes manquants\n");
+			printf("Failure.  FT_Write returned %d\n", (int)ftStatus);
+			return 0;// error in the process of writing the command
+		}
+    	if (bytesWritten != bytesToWrite)// vérifie que la commande à été entièrement envoyée
+		{
+			printf("Failure.  FT_Write wrote %d bytes instead of %d.\n",
+		       	(int)bytesWritten, 
+		    	(int)bytesToWrite);
 			return 0;
 		}
-	}*/
-	
-	
-	usleep(100);
-	RxBytes=0;
-	lenghtQueue(&RxBytes); // récupère le nombre de bytes que l'emetteur cherche a envoyer à l'obc
-	ftStatus = 	FT_Read(ftHandle,RxBuffer,RxBytes,&BytesReceived); // lis la réponse de l'emetteur
-	if (ftStatus == FT_OK) { // si la réception à fonctionnée
-		if (BytesReceived == RxBytes) { // si tous les bytes ont été lus
-			// FT_Read OK
-			printf("\nBytes red : %i \n", RxBytes);
-			printf("Reponse Commande : "); // affiche la réponse
-			for(int i = 0; i < BytesReceived; i++)
-			{
-				printf("%d ",(int)RxBuffer[i]);
+
+    	printf("Successfully wrote %d bytes\n", (int)bytesWritten);
+ 
+		/*if (ftStatus == FT_OK) {
+			if (BytesReceived == RxBytes) {
+				printf("Bytes red : %i\n", RxBytes);
+
 			}
-			printf("\n");
-		}
+			else
+			{
+				printf("Erreur : reception de bytes manquants\n");
+				return 0;
+			}
+		}*/
+	
+	
+		usleep(100);
+		RxBytes=0;
+		lenghtQueue(&RxBytes); // récupère le nombre de bytes que l'emetteur cherche a envoyer à l'obc
+		ftStatus = 	FT_Read(ftHandle,RxBuffer,RxBytes,&BytesReceived); // lis la réponse de l'emetteur
+		if (ftStatus == FT_OK) { // si la réception à fonctionnée
+			if (BytesReceived == RxBytes) { // si tous les bytes ont été lus
+				// FT_Read OK
+				printf("\nBytes red : %i \n", RxBytes);
+				printf("Reponse Commande : "); // affiche la réponse
+				for(int i = 0; i < BytesReceived; i++)
+				{
+					printf("%d ",(int)RxBuffer[i]);
+				}
+				printf("\n");
+				
+				if(RxBuffer[8] == 0x05)
+				{
+					printf("ACKNOWLEDGED \n");
+					send = 0x00; // false
+				}
+				else if(RxBuffer[8] == 0x06)
+				{
+					printf("NOT ACKNOWLEDGABLE\n");
+					send = 0x00; // false
+					return 0;
+				}
+				else if(RxBuffer[8] == 0x07)
+				{
+					printf("BUSY\n");
+					usleep(10000);
+					send = 1;
+				}
+				else if(RxBuffer[8] == 0x10)
+				{
+					printf("TEMPORARILLY NOT ACCEPTABLE\n");
+					send = 0x01; // false
+					usleep(1000);
+				}
+
+			}
 		
+		}
+
 	}
 	usleep(2000);
 
@@ -356,79 +386,75 @@ uint8_t send_GetResult_request(uint8_t command_size,
     //crc
     crc=crc32(0,command_buffer,current_position);
     memcpy(command_buffer + current_position,&crc,sizeof(uint32_t));
+	uint8_t send = 1;
+	while(send){
+		RxBytes=0;
+		send = 0;
 
-	RxBytes=0;
-
-	purgeBuffer();
-	bytesToWrite=command_size;
-	ftStatus = FT_Write(ftHandle, // envoie la requete via le module RS485
-							command_buffer,
-							bytesToWrite, 
-							&bytesWritten);
-	if (ftStatus != FT_OK) // verifie que l'envoi à fonctionné
-	{
-		printf("Failure.  FT_Write returned %d\n", (int)ftStatus);
-		return 0;
-	}
-	
-	if (bytesWritten != bytesToWrite) // vérifie que tous bytes ont été envoyé
-	{
-		printf("Failure.  FT_Write wrote %d bytes instead of %d.\n",
-		       (int)bytesWritten,
-		       (int)bytesToWrite);
-		return 2;
-	}
-	printf("Successfully wrote %d bytes\n", (int)bytesWritten);
-
-	usleep(2000);
-	lenghtQueue(&RxBytes);
-
-	if (RxBytes) { // si une réponse est envoyée via le module par l'emetteur
-	
-		ftStatus = FT_Read(ftHandle,RxBuffer,RxBytes,&BytesReceived);// récupère la réponse
-		if (ftStatus == FT_OK) {
-			if (BytesReceived == RxBytes) {
-				// FT_Read OK
-			printf("\nBytes red gt : %i\n", RxBytes);
-
-            printf("Reponse : ");
-           for(int i = 0; i < 256; i++) // affiche la réponse
-           {
-             printf("%.2X ",RxBuffer[i]); 
-           }
-		   printf("\n");
-		   readData(RxBuffer,reponse);  //récupère la partie data de la réponse
-           
-			}
-		}		
-	}
-
-	usleep(100);
-	RxBytes=0;
-	
-	lenghtQueue(&RxBytes); // recommence pour une éventuelle 2nd réponse
-	if (RxBytes) {
-	
-		ftStatus = FT_Read(ftHandle,RxBuffer,RxBytes,&BytesReceived);
-		if (ftStatus == FT_OK) {
-			if (BytesReceived == RxBytes) {
-					// FT_Read OK
-			printf("\nBytes red gt 2 : %i\n", RxBytes);
-			printf("Reponse : ");
-           for(int i = 0; i < 256; i++)
-           {
-             printf("%.2X ",RxBuffer[i]); 
-           }
-		   printf("\n");
-			readData(RxBuffer,reponse);            
-			}
+		purgeBuffer();
+		bytesToWrite=command_size;
+		ftStatus = FT_Write(ftHandle, // envoie la requete via le module RS485
+								command_buffer,
+								bytesToWrite, 
+								&bytesWritten);
+		if (ftStatus != FT_OK) // verifie que l'envoi à fonctionné
+		{
+			printf("Failure.  FT_Write returned %d\n", (int)ftStatus);
+			return 0;
 		}
 	
-	}
-	else
-		printf("pas de 2nd réponse\n");
+		if (bytesWritten != bytesToWrite) // vérifie que tous bytes ont été envoyé
+		{
+			printf("Failure.  FT_Write wrote %d bytes instead of %d.\n",
+		    	   (int)bytesWritten,
+		       		(int)bytesToWrite);
+			return 0;
+		}
+		printf("Successfully wrote %d bytes\n", (int)bytesWritten);
+
+		usleep(1000);
+		lenghtQueue(&RxBytes);
+
+		if (RxBytes) { // si une réponse est envoyée via le module par l'emetteur
 	
-	usleep(2000);	
+			ftStatus = FT_Read(ftHandle,RxBuffer,RxBytes,&BytesReceived);// récupère la réponse
+			if (ftStatus == FT_OK) {
+				if (BytesReceived == RxBytes) {
+					// FT_Read OK
+					printf("\nBytes red gt : %i\n", RxBytes);
+
+            		printf("Reponse : ");
+           			for(int i = 0; i < 256; i++) // affiche la réponse
+           			{
+            			printf("%.2X ",RxBuffer[i]); 
+           			}
+		   			printf("\n");
+		    		if(RxBuffer[8] == 0x00)
+		    		{
+						readData(RxBuffer,reponse);  //récupère la partie data de la réponse
+					}
+					else if(RxBuffer[8] == 0x08)
+					{
+						printf("NO COMMAND FOR EXECUTION\n");
+						usleep(1000);
+						send = 1;
+					}
+					else if(RxBuffer[8] == 0x07)
+					{
+						printf("BUSY\n");
+						usleep(10000);
+						send = 1;
+					}
+				}
+			}			
+		}
+		else
+		{
+			printf("NO RESPONSE \n");
+			return 0;
+		}
+	}
+	///usleep(5000);	
     return 1;
 }
 
@@ -444,7 +470,7 @@ uint8_t createFile(char name[], char fileHandle[]) // constitue la commande pour
     //crc
 
 	// construction de la commande à partir des informations récupérées de la documentation de l'emetteur
-    uint32_t header = 0x50555345;//0x45 53 55 50;
+    uint32_t header = EMITTER_HEADER;//0x45 53 55 50;
     uint16_t id = EMITTER_ID;
     uint16_t data_lenght = strlen(name)+1;
     uint16_t command_status = 0x0000;
@@ -455,15 +481,16 @@ uint8_t createFile(char name[], char fileHandle[]) // constitue la commande pour
     uint8_t *  data = malloc(sizeof(uint8_t)*(data_lenght));
 
     uint8_t status = 0;
-
+	uint8_t try = 1;
 
     int comm_lenght = 48;
     memcpy(data,name,sizeof(uint8_t)*data_lenght);
 
+	while(try){
     printf("Création du fichier %s\n", name);
 	// envoi de la commande
     status = send_command_request(comm_lenght,header,id,data_lenght,command_status,command,type,data);
-    free(data);
+    
 	if(!status)
         return 0;
         
@@ -478,6 +505,7 @@ uint8_t createFile(char name[], char fileHandle[]) // constitue la commande pour
   
     if(!status)
         return 0;
+	
         
     printf("send getResult  à  marché\n");
 	printf("create result %2.X\n",(int)data_read[0]);
@@ -496,6 +524,8 @@ uint8_t createFile(char name[], char fileHandle[]) // constitue la commande pour
 		printf("echec dans la création du fichier\n");
 		return 0;
 	}
+	}
+	free(data);
     return 1;
  
 }
@@ -511,7 +541,7 @@ uint8_t deleteAllFiles()
     //data
     //crc
 
-	uint32_t header = 0x50555345;//0x45 53 55 50;
+	uint32_t header = EMITTER_HEADER;//0x45 53 55 50;
     uint16_t id = EMITTER_ID;
     uint16_t data_lenght = 0x0000;
     uint16_t command_status = 0x0000;
@@ -556,7 +586,7 @@ uint8_t writeInFile(char fileHandle[], char content[], uint32_t packetNb)
     //data
     //crc
 
-	uint32_t header = 0x50555345;//0x45 53 55 50;
+	uint32_t header = EMITTER_HEADER;//0x45 53 55 50;
     uint16_t id = EMITTER_ID;
     
     uint16_t command_status = 0x0000;
@@ -571,6 +601,7 @@ uint8_t writeInFile(char fileHandle[], char content[], uint32_t packetNb)
 	//uint32_t packetNb = 0; 
 	data = malloc(sizeof(uint8_t)*(data_lenght));
 	uint8_t comm_lenght = 32 + data_lenght;
+	
 
 	memcpy(data,&content_size, sizeof(uint16_t));
 	memcpy(data + 2, fileHandle,sizeof(uint8_t)*4);
@@ -624,7 +655,7 @@ uint8_t openFile(char name[], char fileHandle[])
     //data
     //crc
 
-    uint32_t header = 0x50555345;//0x45 53 55 50;
+    uint32_t header = EMITTER_HEADER;//0x45 53 55 50;
     uint16_t id = EMITTER_ID;
     uint16_t data_lenght = strlen(name)+1;
     uint16_t command_status = 0x0000;
@@ -683,7 +714,7 @@ uint8_t openFile(char name[], char fileHandle[])
 
 uint8_t readFile(char fileHandle[], char lecture[])
 {
-	uint32_t header = 0x50555345;//0x45 53 55 50;
+	uint32_t header = EMITTER_HEADER;//0x45 53 55 50;
     uint16_t id = EMITTER_ID;
     uint16_t data_lenght = 0X0004;
     uint16_t command_status = 0x0000;

@@ -34,7 +34,7 @@ int main(int argc, char * argv[])
  
     // écriture dans le fichier
     if(status)
-        status = writeInFile(cfileHandle,ecrire);
+        status = writeInFile(cfileHandle,ecrire,0);
     usleep(wait);
 
     uint16_t tailleFichier = 256;
