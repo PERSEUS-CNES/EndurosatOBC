@@ -3,6 +3,7 @@
 #include "ftd2xx.h"
 #include <string.h>
 #include <unistd.h>
+#include <sys/time.h>
 //#include "es_crc32.h"
 #include <stdint.h>
 #include <stdlib.h>
@@ -178,6 +179,8 @@ uint8_t send_command_request(uint8_t command_size,
 {
 
 
+	struct timeval start;  // timer
+	struct timeval temps_actuel;
 
     uint32_t crc=0;
     DWORD bytesToWrite = 0;
@@ -240,11 +243,14 @@ uint8_t send_command_request(uint8_t command_size,
     }
     printf("\n");
 
-	uint8_t send = 0x01; // true
+	
+
+	uint8_t loop_01 = 1; // true
+	uint8_t loop_02 = 1;
 	// sending the command
-	while(send)
+	while(loop_01)
 	{
-		send = 0x00; // false
+		loop_01 = 0; // false
 		purgeBuffer();
 	
 		// envoie la commande via l'adaptateur RS485
@@ -280,50 +286,88 @@ uint8_t send_command_request(uint8_t command_size,
 			}
 		}*/
 	
-	
-		usleep(100);
-		RxBytes=0;
-		lenghtQueue(&RxBytes); // récupère le nombre de bytes que l'emetteur cherche a envoyer à l'obc
-		ftStatus = 	FT_Read(ftHandle,RxBuffer,RxBytes,&BytesReceived); // lis la réponse de l'emetteur
-		if (ftStatus == FT_OK) { // si la réception à fonctionnée
-			if (BytesReceived == RxBytes) { // si tous les bytes ont été lus
-				// FT_Read OK
-				printf("\nBytes red : %i \n", RxBytes);
-				printf("Reponse Commande : "); // affiche la réponse
-				for(int i = 0; i < BytesReceived; i++)
-				{
-					printf("%d ",(int)RxBuffer[i]);
-				}
-				printf("\n");
-				
-				if(RxBuffer[8] == 0x05)
-				{
-					printf("ACKNOWLEDGED \n");
-					send = 0x00; // false
-				}
-				else if(RxBuffer[8] == 0x06)
-				{
-					printf("NOT ACKNOWLEDGABLE\n");
-					send = 0x00; // false
-					return 0;
-				}
-				else if(RxBuffer[8] == 0x07)
-				{
-					printf("BUSY\n");
-					usleep(10000);
-					send = 1;
-				}
-				else if(RxBuffer[8] == 0x10)
-				{
-					printf("TEMPORARILLY NOT ACCEPTABLE\n");
-					send = 0x01; // false
-					usleep(1000);
-				}
+		// timeout 
+		gettimeofday(&start, NULL);
+		uint32_t start_ms_resp_read = (start.tv_sec * SEC_IN_MICRO) + start.tv_usec;
+		gettimeofday(&temps_actuel, NULL);
+		uint32_t actuel_ms_resp_read = (temps_actuel.tv_sec * SEC_IN_MICRO) + temps_actuel.tv_usec;
+		uint32_t current_cycle_resp_read =  actuel_ms_resp_read - start_ms_resp_read;
 
+		while(loop_02 && current_cycle_resp_read <10  * MILLI_IN_MICRO)
+		{
+			loop_02 = 0;
+			RxBytes=0;
+			
+	
+			gettimeofday(&start, NULL); // enregistre l'heure actuelle dans la variable start
+			uint32_t start_ms_wait_resp = (start.tv_sec * SEC_IN_MICRO) + start.tv_usec;
+	
+			gettimeofday(&temps_actuel, NULL);
+			uint32_t actuel_ms_wait_resp = (temps_actuel.tv_sec * SEC_IN_MICRO) + temps_actuel.tv_usec;
+			uint32_t current_cycle_wait_resp =  actuel_ms_wait_resp - start_ms_wait_resp;
+			while(current_cycle_wait_resp < 1 * MILLI_IN_MICRO && !RxBytes)
+			{
+			
+				gettimeofday(&temps_actuel, NULL);
+				actuel_ms_wait_resp = (temps_actuel.tv_sec * SEC_IN_MICRO) + temps_actuel.tv_usec;
+				current_cycle_wait_resp = actuel_ms_wait_resp - start_ms_wait_resp;
+				usleep(100);
+				lenghtQueue(&RxBytes); // récupère le nombre de bytes que l'emetteur cherche a envoyer à l'obc
+			}
+
+			if(!RxBytes)
+			{
+				printf("Aucune reponse\n");
+				return 0;
 			}
 		
-		}
+		
+			ftStatus = 	FT_Read(ftHandle,RxBuffer,RxBytes,&BytesReceived); // lis la réponse de l'emetteur
+			if (ftStatus == FT_OK) { // si la réception à fonctionnée
+				if (BytesReceived == RxBytes) { // si tous les bytes ont été lus
+					// FT_Read OK
+					printf("\nBytes red : %i \n", RxBytes);
+					printf("Reponse Commande : "); // affiche la réponse
+					for(int i = 0; i < BytesReceived; i++)
+					{
+						printf("%d ",(int)RxBuffer[i]);
+					}
+					printf("\n");
+				
+					if(RxBuffer[8] == 0x05)
+					{
+						printf("ACKNOWLEDGED \n");
+						loop_01 = 0x00; // false
+					}
+					else if(RxBuffer[8] == 0x06)
+					{
+						printf("NOT ACKNOWLEDGABLE\n");
+						loop_01 = 0x00; // false
+						return 0;
+					}
+					else if(RxBuffer[8] == 0x07)
+					{
+						printf("BUSY\n");
+						usleep(100);
+						loop_01 = 0;
 
+						// retour dans la loop de lecture de la réponse
+						gettimeofday(&temps_actuel, NULL);
+						actuel_ms_resp_read = (temps_actuel.tv_sec * SEC_IN_MICRO) + temps_actuel.tv_usec;
+						current_cycle_resp_read =  actuel_ms_resp_read - start_ms_resp_read;
+						loop_02 = 1;
+					}
+					else if(RxBuffer[8] == 0x10)
+					{
+						printf("TEMPORARILLY0x01 NOT ACCEPTABLE\n");
+						loop_01 = 1; //true
+						usleep(1000);
+					}
+
+				}
+		
+			}
+		}
 	}
 	usleep(2000);
 
@@ -346,6 +390,10 @@ uint8_t send_GetResult_request(uint8_t command_size,
 	DWORD BytesReceived;
     uint8_t RxBuffer[256];
     FT_STATUS  ftStatus = FT_OK;
+
+	struct timeval start;  // timer
+	struct timeval temps_actuel;
+
     
 
     uint8_t command_buffer[command_size];
@@ -386,10 +434,10 @@ uint8_t send_GetResult_request(uint8_t command_size,
     //crc
     crc=crc32(0,command_buffer,current_position);
     memcpy(command_buffer + current_position,&crc,sizeof(uint32_t));
-	uint8_t send = 1;
-	while(send){
+	uint8_t loop_01 = 1;
+	while(loop_01){
 		RxBytes=0;
-		send = 0;
+		loop_01 = 0;
 
 		purgeBuffer();
 		bytesToWrite=command_size;
@@ -412,8 +460,23 @@ uint8_t send_GetResult_request(uint8_t command_size,
 		}
 		printf("Successfully wrote %d bytes\n", (int)bytesWritten);
 
-		usleep(1000);
-		lenghtQueue(&RxBytes);
+		RxBytes=0;
+		// demarre le timeout pour attendre la réponse
+		gettimeofday(&start, NULL); // enregistre l'heure actuelle dans la variable start
+		uint32_t start_ms_wait_resp = (start.tv_sec * SEC_IN_MICRO) + start.tv_usec;
+	
+		gettimeofday(&temps_actuel, NULL);
+		uint32_t actuel_ms_wait_resp = (temps_actuel.tv_sec * SEC_IN_MICRO) + temps_actuel.tv_usec;
+		uint32_t current_cycle_wait_resp =  actuel_ms_wait_resp - start_ms_wait_resp;
+		while(current_cycle_wait_resp < 1 * MILLI_IN_MICRO && !RxBytes)
+		{
+		
+			gettimeofday(&temps_actuel, NULL);
+			actuel_ms_wait_resp = (temps_actuel.tv_sec * SEC_IN_MICRO) + temps_actuel.tv_usec;
+			current_cycle_wait_resp = actuel_ms_wait_resp - start_ms_wait_resp;
+			usleep(100);
+			lenghtQueue(&RxBytes); // récupère le nombre de bytes que l'emetteur cherche a envoyer à l'obc
+		}
 
 		if (RxBytes) { // si une réponse est envoyée via le module par l'emetteur
 	
@@ -437,13 +500,12 @@ uint8_t send_GetResult_request(uint8_t command_size,
 					{
 						printf("NO COMMAND FOR EXECUTION\n");
 						usleep(1000);
-						send = 1;
+						loop_01 = 1;
 					}
 					else if(RxBuffer[8] == 0x07)
 					{
 						printf("BUSY\n");
-						usleep(10000);
-						send = 1;
+						loop_01 = 1;
 					}
 				}
 			}			
@@ -601,7 +663,7 @@ uint8_t writeInFile(char fileHandle[], char content[], uint32_t packetNb)
 	//uint32_t packetNb = 0; 
 	data = malloc(sizeof(uint8_t)*(data_lenght));
 	uint8_t comm_lenght = 32 + data_lenght;
-	
+	comm_lenght = 16*(1+((int)(comm_lenght/16))); //la longueur de la commande doit etre un multiple de 16
 
 	memcpy(data,&content_size, sizeof(uint16_t));
 	memcpy(data + 2, fileHandle,sizeof(uint8_t)*4);

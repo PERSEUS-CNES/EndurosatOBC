@@ -5,6 +5,10 @@
 #define EMITTER_ID 0x2006 // id de l'emetteur
 #define EMITTER_HEADER 0x50555345 // header des commandes
 
+//unités pour l'utilisation du timer
+#define SEC_IN_MICRO 				1000000
+#define MILLI_IN_MICRO 				1000
+
 extern FT_HANDLE  ftHandle;
 
 FT_STATUS initialize_FTDI(int baudRate, int portNum);
