@@ -187,7 +187,7 @@ uint8_t send_command_request(uint8_t command_size,
     DWORD bytesWritten = 0;
     DWORD RxBytes = 32;
 	DWORD BytesReceived;
-    uint8_t RxBuffer[256];
+    uint8_t RxBuffer[32];
     FT_STATUS  ftStatus = FT_OK;
 
     uint8_t command_buffer[command_size];
@@ -195,6 +195,10 @@ uint8_t send_command_request(uint8_t command_size,
     {
         command_buffer[i] = 0x00;
     }
+	for(int i = 0; i < 32; i++)
+	{
+		RxBuffer[i] = 0x00;
+	}
     
     
     int current_position = 0; // position actuelle dans le buffer
@@ -292,7 +296,7 @@ uint8_t send_command_request(uint8_t command_size,
 		gettimeofday(&temps_actuel, NULL);
 		uint32_t actuel_ms_resp_read = (temps_actuel.tv_sec * SEC_IN_MICRO) + temps_actuel.tv_usec;
 		uint32_t current_cycle_resp_read =  actuel_ms_resp_read - start_ms_resp_read;
-
+		loop_02 = 1;
 		while(loop_02 && current_cycle_resp_read <10  * MILLI_IN_MICRO)
 		{
 			loop_02 = 0;
@@ -305,7 +309,7 @@ uint8_t send_command_request(uint8_t command_size,
 			gettimeofday(&temps_actuel, NULL);
 			uint32_t actuel_ms_wait_resp = (temps_actuel.tv_sec * SEC_IN_MICRO) + temps_actuel.tv_usec;
 			uint32_t current_cycle_wait_resp =  actuel_ms_wait_resp - start_ms_wait_resp;
-			while(current_cycle_wait_resp < 1 * MILLI_IN_MICRO && !RxBytes)
+			while(current_cycle_wait_resp < 2 * MILLI_IN_MICRO && !RxBytes)
 			{
 			
 				gettimeofday(&temps_actuel, NULL);
@@ -318,12 +322,17 @@ uint8_t send_command_request(uint8_t command_size,
 			if(!RxBytes)
 			{
 				printf("Aucune reponse\n");
+
+				//loop_01 = 1;
+				//usleep(100);
+
 				return 0;
+				
 			}
 		
-		
-			ftStatus = 	FT_Read(ftHandle,RxBuffer,RxBytes,&BytesReceived); // lis la réponse de l'emetteur
-			if (ftStatus == FT_OK) { // si la réception à fonctionnée
+			if(RxBytes)
+				ftStatus = 	FT_Read(ftHandle,RxBuffer,RxBytes,&BytesReceived); // lis la réponse de l'emetteur
+			if (RxBytes && ftStatus == FT_OK) { // si la réception à fonctionnée
 				if (BytesReceived == RxBytes) { // si tous les bytes ont été lus
 					// FT_Read OK
 					printf("\nBytes red : %i \n", RxBytes);
@@ -363,11 +372,18 @@ uint8_t send_command_request(uint8_t command_size,
 						loop_01 = 1; //true
 						usleep(1000);
 					}
+					else if(RxBuffer[0] != 0x45)
+					{
+						printf("WRONG HEADER\n");
+						
+						//loop_01 = 1;
+					}
 
 				}
 		
 			}
 		}
+		//printf("loop 01 = %d\n",(int)loop_01);
 	}
 	usleep(2000);
 
@@ -435,7 +451,13 @@ uint8_t send_GetResult_request(uint8_t command_size,
     crc=crc32(0,command_buffer,current_position);
     memcpy(command_buffer + current_position,&crc,sizeof(uint32_t));
 	uint8_t loop_01 = 1;
-	while(loop_01){
+	gettimeofday(&start, NULL);
+	uint32_t start_ms_resp_read = (start.tv_sec * SEC_IN_MICRO) + start.tv_usec;
+	gettimeofday(&temps_actuel, NULL);
+	uint32_t actuel_ms_resp_read = (temps_actuel.tv_sec * SEC_IN_MICRO) + temps_actuel.tv_usec;
+	uint32_t current_cycle_resp_read =  actuel_ms_resp_read - start_ms_resp_read;
+	
+	while(loop_01 ){
 		RxBytes=0;
 		loop_01 = 0;
 
@@ -500,12 +522,15 @@ uint8_t send_GetResult_request(uint8_t command_size,
 					{
 						printf("NO COMMAND FOR EXECUTION\n");
 						usleep(1000);
-						loop_01 = 1;
+						loop_01 = 0;
 					}
 					else if(RxBuffer[8] == 0x07)
 					{
-						printf("BUSY\n");
+						printf("BUSY g\n");
 						loop_01 = 1;
+						gettimeofday(&temps_actuel, NULL);
+						actuel_ms_resp_read = (temps_actuel.tv_sec * SEC_IN_MICRO) + temps_actuel.tv_usec;
+						current_cycle_resp_read =  actuel_ms_resp_read - start_ms_resp_read;
 					}
 				}
 			}			
@@ -515,6 +540,7 @@ uint8_t send_GetResult_request(uint8_t command_size,
 			printf("NO RESPONSE \n");
 			return 0;
 		}
+		
 	}
 	///usleep(5000);	
     return 1;
@@ -549,6 +575,7 @@ uint8_t createFile(char name[], char fileHandle[]) // constitue la commande pour
     memcpy(data,name,sizeof(uint8_t)*data_lenght);
 
 	while(try){
+		try = 0;
     printf("Création du fichier %s\n", name);
 	// envoi de la commande
     status = send_command_request(comm_lenght,header,id,data_lenght,command_status,command,type,data);
@@ -702,6 +729,11 @@ uint8_t writeInFile(char fileHandle[], char content[], uint32_t packetNb)
 		printf("echec lors de la récupération de la réponse\n");
 		return 0;
 	}
+	else if (data_read[0] != 0x00)
+	{
+		printf("erreur lors de l'écruture du fichier \n");
+		return 0;
+	}
 
 	return 1;	
 }
@@ -807,7 +839,7 @@ uint8_t readFile(char fileHandle[], char lecture[])
         
     printf("send getResult  à  marché\n");
 	printf("read result %d\n",(int)lecture[0]);
-	if(lecture[0] == 0x00 || 1)
+	if(lecture[0] == 0x00)
 	{
 		printf("le fichier à été lu; texte : \n");
 		for(int i = 0; i < 256; i++)
@@ -819,7 +851,7 @@ uint8_t readFile(char fileHandle[], char lecture[])
 	}
 	else
 	{
-		printf("echec dans l'ouverture du fichier\n");
+		printf("echec dans la lecture du fichier\n");
 		return 0;
 	}
     return 1;

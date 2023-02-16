@@ -3,7 +3,7 @@
 
 
 #define EMITTER_ID 0x2006 // id de l'emetteur
-#define EMITTER_HEADER 0x50555345 // header des commandes
+#define EMITTER_HEADER 0x50555345 // header des commandes 0x45535550
 
 //unités pour l'utilisation du timer
 #define SEC_IN_MICRO 				1000000
