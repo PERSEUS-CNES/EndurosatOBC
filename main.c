@@ -9,7 +9,7 @@
 
 
 
-int main(int argc, char * argv[])
+int main()
 {
     /*uint8_t newTestCreateFile [] = {0x45, 0x53, 0x55 , 0x50 , 0x07, 0x20, 0x0E, 0x00, 0x00, 0x00, 0x06, 0x01, 0x00,  0x00,  0x4E, 0x65, 0x77, 0x5F, 0x46, 0x69, 0x6C, 0x65, 0x2E, 0x74, 0x78, 0x74, 0x00, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00 , 0x00 , 0x00 , 0x00 , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
     uint8_t taille = sizeof(newTestCreateFile);
@@ -33,11 +33,26 @@ int main(int argc, char * argv[])
     uint32_t wait = 5000;
     
     FT_STATUS status_ft = initialize_FTDI(baud, port);
+    
+    
+    // configuration de l'emetteur
+    struct configuration param;
+    param.symbol_rate = 5;
+    param.transmit_power = 28;
+    param.MODCOD = 1;
+    param.roll_off = 0;
+    param.pilot_signal = 1;
+    param.FEC_frame_size = 0;
+    param.pretransmission_delay = 3000;
+    param.center_frequency = 2450.0000;
+    
+    status = set_emitter_config(&param);
+
     // suppression de tout les fichiers
     status = deleteAllFiles();
     usleep(wait);
-    char namefile[] = "New_File.txt";
-    char ecrire[] = "Write_in_File";
+    char namefile[] = "ennvoye.txt";
+    char ecrire[] = "ANTHONY TU MENTEND";
     char * cfileHandle;
     cfileHandle = malloc(sizeof(uint8_t)*4);
     char * ofileHandle;
@@ -59,13 +74,23 @@ int main(int argc, char * argv[])
     
 
     // ouverture du fichier
-    if(status)
+    /*if(status)
         status = openFile(namefile,ofileHandle);
     usleep(wait);
     
     // lecture du fichier
     if(status)
         status = readFile(ofileHandle,lecture);
+    usleep(wait);*/
+
+    // transmit mode
+    if(status)
+        status = tansmit_mode(1);
+    usleep(wait);
+
+    // send file
+    if(status)
+        status = sendFile(namefile);
     usleep(wait);
 
     free(cfileHandle);
