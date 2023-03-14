@@ -23,6 +23,7 @@ struct configuration {
 //typedef emitter_config struct configuration;
 
 extern FT_HANDLE  ftHandle;
+extern uint8_t debug;
 
 FT_STATUS initialize_FTDI(int baudRate, int portNum);
 void purgeBuffer();

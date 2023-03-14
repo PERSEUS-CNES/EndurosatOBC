@@ -965,10 +965,10 @@ uint8_t sendFile(char fileName[])
         return 0;
         
     printf("send getResult  à  marché\n");
-	printf("open result %2.X\n",(int)data_read[0]);
+	printf("send result %2.X\n",(int)data_read[0]);
 	if(data_read[0] == 0x00)
 	{
-		printf("le fichier à été envoyé\n");
+		printf("-------------------------------------------le fichier à été envoyé\n");
 	}
 	else
 	{
@@ -1004,30 +1004,29 @@ uint8_t tansmit_mode(uint8_t on)
 	int comm_lenght = 32;
 
 	status = send_command_request(comm_lenght,header,id,data_lenght,command_status,command,type,data);
-    free(data);
 	if(!status)
         return 0;
         
-    printf("commande d'envoi du fichier à  marchée\n");
+    printf("commande de mode de transmission a marche \n");
     type = command;
     command = 0x0114;
     comm_lenght = 32;
     data_lenght = 0;
-    printf("send getResult pour l'envoi du fichier \n");
+    printf("send getResult pour le mode d'envoi \n");
     status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_read);    
   
     if(!status)
         return 0;
         
     printf("send getResult  à  marché\n");
-	printf("open result %2.X\n",(int)data_read[0]);
+	printf("transmit result %2.X\n",(int)data_read[0]);
 	if(data_read[0] == 0x00)
 	{
-		printf("le fichier à été envoyé\n");
+		printf("le mode de transmission a ete changé à %d .\n", (int)on );
 	}
 	else
 	{
-		printf("echec dans l'envoi du fichier\n");
+		printf("echec changement de mode\n");
 		return 0;
 	}
     return 1;

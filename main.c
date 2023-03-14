@@ -38,7 +38,7 @@ int main()
     // configuration de l'emetteur
     struct configuration param;
     param.symbol_rate = 5;
-    param.transmit_power = 28;
+    param.transmit_power = 27;
     param.MODCOD = 1;
     param.roll_off = 0;
     param.pilot_signal = 1;
@@ -91,6 +91,10 @@ int main()
     // send file
     if(status)
         status = sendFile(namefile);
+    usleep(wait);
+
+    if(status)
+        status = tansmit_mode(0);
     usleep(wait);
 
     free(cfileHandle);
