@@ -239,14 +239,15 @@ uint8_t send_command_request(uint8_t command_size,
     bytesToWrite=command_size;
 	RxBytes=0;
 
-    
-    printf("commande : \n");
-    for(int i = 0; i < command_size; i++)
-    {
-        printf("%.2X " ,(int)command_buffer[i]);
-    }
-    printf("\n");
-
+    if(debug != 0)
+	{
+    	printf("commande : \n");
+    	for(int i = 0; i < command_size; i++)
+    	{
+        	printf("%.2X " ,(int)command_buffer[i]);
+    	}
+    	printf("\n");
+	}
 	
 
 	uint8_t loop_01 = 1; // true
@@ -336,13 +337,15 @@ uint8_t send_command_request(uint8_t command_size,
 				if (BytesReceived == RxBytes) { // si tous les bytes ont été lus
 					// FT_Read OK
 					printf("\nBytes red : %i \n", RxBytes);
-					printf("Reponse Commande : "); // affiche la réponse
-					for(int i = 0; i < BytesReceived; i++)
+					if(debug != 0)
 					{
-						printf("%d ",(int)RxBuffer[i]);
+						printf("Reponse Commande : "); // affiche la réponse
+						for(int i = 0; i < BytesReceived; i++)
+						{
+							printf("%d ",(int)RxBuffer[i]);
+						}
+						printf("\n");
 					}
-					printf("\n");
-				
 					if(RxBuffer[8] == 0x05)
 					{
 						printf("ACKNOWLEDGED \n");
@@ -507,13 +510,16 @@ uint8_t send_GetResult_request(uint8_t command_size,
 				if (BytesReceived == RxBytes) {
 					// FT_Read OK
 					printf("\nBytes red gt : %i\n", RxBytes);
-
-            		printf("Reponse : ");
-           			for(int i = 0; i < 256; i++) // affiche la réponse
-           			{
-            			printf("%.2X ",RxBuffer[i]); 
-           			}
-		   			printf("\n");
+					if(debug != 0)
+					{
+            			printf("Reponse : ");
+           				for(int i = 0; i < 256; i++) // affiche la réponse
+           				{
+            				printf("%.2X ",RxBuffer[i]); 
+           				}
+		   				printf("\n");
+					}
+					
 		    		if(RxBuffer[8] == 0x00)
 		    		{
 						readData(RxBuffer,reponse);  //récupère la partie data de la réponse
