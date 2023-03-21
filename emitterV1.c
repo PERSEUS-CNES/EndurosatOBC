@@ -168,7 +168,7 @@ void byteFlip(uint16_t * two_byte_int)
 }
 
 // envoie une commande à partir des differents elements qui lui sont donnés
-uint8_t send_command_request(uint8_t command_size, 
+uint8_t send_command_request(uint32_t command_size, 
                                 uint32_t header,
                                 uint16_t id,
                                 uint16_t data_lenght,
@@ -177,7 +177,6 @@ uint8_t send_command_request(uint8_t command_size,
                                 uint16_t type,
                                 uint8_t data[])
 {
-
 
 	struct timeval start;  // timer
 	struct timeval temps_actuel;
@@ -201,7 +200,7 @@ uint8_t send_command_request(uint8_t command_size,
 	}
     
     
-    int current_position = 0; // position actuelle dans le buffer
+    uint16_t current_position = 0; // position actuelle dans le buffer
     
 	// construction du buffer contenant la commande à envoyer
     //header
@@ -227,11 +226,10 @@ uint8_t send_command_request(uint8_t command_size,
     //type
     memcpy(command_buffer + current_position,&type,sizeof(uint16_t));
     current_position += 2;
-
-    //data
-    memcpy(command_buffer + current_position,data,sizeof(uint8_t)*data_lenght);
+	
+	    //data
+	memcpy(command_buffer + current_position,data,sizeof(uint8_t)*data_lenght);
     current_position = current_position + data_lenght;
-
     //crc
     crc=crc32(0,command_buffer,current_position);
     memcpy(command_buffer + current_position,&crc,sizeof(uint32_t));
@@ -393,7 +391,7 @@ uint8_t send_command_request(uint8_t command_size,
     return 1;
 }
 
-uint8_t send_GetResult_request(uint8_t command_size, 
+uint8_t send_GetResult_request(uint32_t command_size, 
                                 uint32_t header,
                                 uint16_t id,
                                 uint16_t data_lenght,
@@ -529,6 +527,7 @@ uint8_t send_GetResult_request(uint8_t command_size,
 						printf("NO COMMAND FOR EXECUTION\n");
 						usleep(1000);
 						loop_01 = 0;
+						//return 0;
 					}
 					else if(RxBuffer[8] == 0x07)
 					{
@@ -646,7 +645,7 @@ uint8_t deleteAllFiles()
 
 	uint8_t status = 0;
 
-	uint8_t comm_lenght = 32;
+	uint32_t comm_lenght = 32;
 	printf("SUPRESSION DE TOUT LES FICHIERS\n");
 	status = send_command_request(comm_lenght,header,id,data_lenght,command_status,command,type,data);
 
@@ -695,7 +694,7 @@ uint8_t writeInFile(char fileHandle[], char content[], uint32_t packetNb)
 	
 	//uint32_t packetNb = 0; 
 	data = malloc(sizeof(uint8_t)*(data_lenght));
-	uint8_t comm_lenght = 32 + data_lenght;
+	uint32_t comm_lenght = 32 + data_lenght;
 	comm_lenght = 16*(1+((int)(comm_lenght/16))); //la longueur de la commande doit etre un multiple de 16
 
 	memcpy(data,&content_size, sizeof(uint16_t));

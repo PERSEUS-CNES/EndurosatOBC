@@ -36,7 +36,7 @@ void readData(uint8_t buffer[], uint8_t * data_target);
 
 // envoie une commande via l'adaptateur rs485
 //retourne 1 en cas de succès et 0 en cas d'échec
-uint8_t send_command_request(uint8_t command_size, 
+uint8_t send_command_request(uint32_t command_size, 
                                 uint32_t header,
                                 uint16_t id,
                                 uint16_t data_lenght,
@@ -48,7 +48,7 @@ uint8_t send_command_request(uint8_t command_size,
 
 //envoie une commande attendant une réponse après avoir envoyé une commande
 //retourne 1 en cas de succès et 0 en cas d'échec
-uint8_t send_GetResult_request(uint8_t command_size, 
+uint8_t send_GetResult_request(uint32_t command_size, 
                                 uint32_t header,
                                 uint16_t id,
                                 uint16_t data_lenght,
