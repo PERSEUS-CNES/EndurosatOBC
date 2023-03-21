@@ -13,6 +13,7 @@
 //#include <stdbool.h>
 //#include <mqueue.h>
 #include "sbgEComLib.h"
+#include <pthread.h>
 
 /*! -----------------------------------------------    Les fichiers    -----------------------------------------------*/
 
@@ -21,6 +22,7 @@
 
 unsigned char main_centrale();
 void * envoie_message(void *arg);
+unsigned char test_message(unsigned char msg);
 
 
 /**
@@ -72,7 +74,7 @@ typedef Variables_connexion Variables_connexion;
  * @author Team OBC (ENSSAT)
  *
  */
-typedef struct File_de_message {
+/*typedef struct File_de_message {
 	mqd_t file_message_Centrale ;         //ID de la file de message pour la communication avec la centrale inertiel
 	mqd_t file_message_Emetteur ;         //ID de la file de message pour la communication avec l'emetteur
 	mqd_t file_message_Sauvegarde ;       //ID de la file de message pour la communication avec le fils de sauvegarde
@@ -81,7 +83,7 @@ typedef struct File_de_message {
 
 
 } File_de_message ;
-typedef File_de_message File_de_message;
+typedef File_de_message File_de_message;*/
 
 /*! -----------------------------------------------    Les donnes    -----------------------------------------------*/
 
