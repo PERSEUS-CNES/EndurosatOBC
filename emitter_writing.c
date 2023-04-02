@@ -196,3 +196,40 @@ uint8_t writeInFile(char fileHandle[], char content[], uint32_t packetNb)
 
 	return 1;	
 }
+
+//répartit l'écriture d'un buffer de plus de 1472 octets pour l'écrire dans un seul fichier
+// pas encore testé
+uint8_t writeMultiple(uint8_t fileHandle[], uint8_t content[], uint32_t buffer_size)
+{
+	uint32_t nbPackets = (buffer_size / BUFFER_MAX_LENGHT  )+ 1;
+	uint32_t current_Packet = 0;
+
+	uint8_t loop = 1;
+	uint8_t status = 1;
+	uint8_t data_to_write[BUFFER_MAX_LENGHT];
+	uint32_t lenght_to_write = 0;
+	
+	while(current_Packet < nbPackets - 1 && status)
+	{
+		memcpy(data_to_write, content + BUFFER_MAX_LENGHT*current_Packet, BUFFER_MAX_LENGHT);
+		status = writeInFile(fileHandle, content, current_Packet);
+		if(status)
+		{
+			current_Packet++;
+		}
+		usleep(5000);
+	}
+	while(current_Packet + 1  == nbPackets && loop)
+	{
+		lenght_to_write = buffer_size - BUFFER_MAX_LENGHT*current_Packet;
+		memcpy(data_to_write, content + BUFFER_MAX_LENGHT*current_Packet, lenght_to_write);
+		status = writeInFile(fileHandle, content, current_Packet);
+		if(status)
+		{
+			loop = 0;
+		}
+		usleep(5000);
+	}
+	
+
+}
