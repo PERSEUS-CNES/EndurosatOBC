@@ -6,6 +6,17 @@ extern uint8_t debug;
 
 FT_HANDLE  ftHandle = NULL;
 
+typedef enum  {all_parameters,
+                        parm_symbol_rate, 
+                        parm_transmit_power, 
+                        parm_MODCOD, 
+                        parm_roll_off,
+                        parm_pilot_signal,
+                        parm_FEC_frame_size,
+                        parm_pretransmission_delay,
+                        parm_center_frequency} parameters;
+
+
 struct configuration {
     uint8_t symbol_rate;
     uint8_t transmit_power;
@@ -19,4 +30,4 @@ struct configuration {
 
 FT_STATUS initialize_FTDI(int baudRate, int portNum);
 
-uint8_t set_emitter_config(struct configuration * parametres);
+uint8_t set_emitter_config(struct configuration * parametres, parameters config_changes);

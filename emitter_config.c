@@ -4,15 +4,15 @@
 #include "emitter_config.h"
 #include "emitter_commands.h"
 
-uint8_t set_emitter_config(struct configuration * parametres) 
+uint8_t set_emitter_config(struct configuration * parametres,  parameters config_changes) 
 {
 	uint32_t header = EMITTER_HEADER;//0x45 53 55 50;
     uint16_t id = EMITTER_ID;
-    uint16_t data_lenght = 0x000C;
+    uint16_t data_lenght = 0;
     uint16_t command_status = 0x0000;
     uint16_t command = 0x0101;
     uint16_t type = 0x0048;
-	uint8_t * data = malloc(sizeof(uint8_t)*data_lenght);
+	uint8_t * data;
 	uint8_t lecture[1];
 
 	uint8_t comm_lenght = 48;
@@ -26,16 +26,64 @@ uint8_t set_emitter_config(struct configuration * parametres)
     uint8_t FEC_frame_size;
     uint16_t pretransmission_delay;
     float center_frequency;*/
-	
-	data[0] = parametres -> symbol_rate;
-	data[1] = parametres -> transmit_power;
-	data[2] = parametres -> MODCOD;
-	data[3] = parametres -> roll_off;
-	data[4] = parametres -> pilot_signal;
-	data[5] = parametres -> FEC_frame_size;
+	switch (config_changes)
+	{
+		case all_parameters :
+			data_lenght = 0x000C; 
+			data = malloc(sizeof(uint8_t)*data_lenght);
 
-	memcpy(data + 6, &(parametres -> pretransmission_delay),sizeof(uint16_t));
-	memcpy(data + 8, &(parametres -> center_frequency),sizeof(uint32_t));
+			data[0] = parametres -> symbol_rate;
+			data[1] = parametres -> transmit_power;
+			data[2] = parametres -> MODCOD;
+			data[3] = parametres -> roll_off;
+			data[4] = parametres -> pilot_signal;
+			data[5] = parametres -> FEC_frame_size;
+
+			memcpy(data + 6, &(parametres -> pretransmission_delay),sizeof(uint16_t));
+			memcpy(data + 8, &(parametres -> center_frequency),sizeof(uint32_t));	
+		break;
+		case parm_symbol_rate:
+			data_lenght = sizeof(uint8_t);
+			data = malloc(sizeof(uint8_t)*data_lenght);
+			memcpy(data, &(parametres -> symbol_rate),data_lenght);
+		break;
+		case parm_transmit_power:
+			data_lenght = sizeof(uint8_t);
+			data = malloc(data_lenght);
+			memcpy(data, &(parametres -> transmit_power),data_lenght);
+		break;
+		case parm_MODCOD:
+			data_lenght = sizeof(uint8_t);
+			data = malloc(data_lenght);
+			memcpy(data, &(parametres -> MODCOD),data_lenght);
+		break;
+		case parm_roll_off:
+			data_lenght = sizeof(uint8_t);
+			data = malloc(data_lenght);
+			memcpy(data, &(parametres -> roll_off),data_lenght);
+		break;
+		case parm_pilot_signal:
+			data_lenght = sizeof(uint8_t);
+			data = malloc(data_lenght);
+			memcpy(data, &(parametres -> pilot_signal),data_lenght);
+		break;
+		case parm_FEC_frame_size:
+			data_lenght = sizeof(uint8_t);
+			data = malloc(data_lenght);
+			memcpy(data, &(parametres -> FEC_frame_size),data_lenght);
+		break;
+		case parm_pretransmission_delay:
+			data_lenght = sizeof(uint16_t);
+			data = malloc(data_lenght);
+			memcpy(data, &(parametres -> symbol_rate),data_lenght);
+		break;
+		case parm_center_frequency:
+			data_lenght = sizeof(float);
+			data = malloc(data_lenght);
+			memcpy(data, &(parametres -> center_frequency),data_lenght);
+		break;
+	}
+	
 	
 
 	printf("configuration");

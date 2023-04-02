@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "es_crc32.h": "c"
+        "es_crc32.h": "c",
+        "emitter_commands.h": "c"
     }
 }

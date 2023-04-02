@@ -59,7 +59,7 @@ int main(int argc, char * argv[])
     param.pretransmission_delay = 3000;
     param.center_frequency = 2450.0000;
     
-    status = set_emitter_config(&param);
+    status = set_emitter_config(&param, all_parameters);
 
     // suppression de tout les fichiers
     status = deleteAllFiles();
