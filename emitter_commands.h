@@ -1,6 +1,11 @@
+#include <stdio.h>
+#include <assert.h>
 #include "ftd2xx.h"
-#include "es_crc32.h"
-
+#include <string.h>
+#include <unistd.h>
+#include <sys/time.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 #define EMITTER_ID 0x2006 // id de l'emetteur
 #define EMITTER_HEADER 0x50555345 // header des commandes 0x45535550
@@ -9,23 +14,9 @@
 #define SEC_IN_MICRO 				1000000
 #define MILLI_IN_MICRO 				1000
 
-struct configuration {
-    uint8_t symbol_rate;
-    uint8_t transmit_power;
-    uint8_t MODCOD;
-    uint8_t roll_off;
-    uint8_t pilot_signal;
-    uint8_t FEC_frame_size;
-    uint16_t pretransmission_delay;
-    float center_frequency;
-};
-
-//typedef emitter_config struct configuration;
-
-extern FT_HANDLE  ftHandle;
 extern uint8_t debug;
+extern FT_HANDLE  ftHandle;
 
-FT_STATUS initialize_FTDI(int baudRate, int portNum);
 void purgeBuffer();
 void lenghtQueue(DWORD* RxBytes);
 
@@ -56,32 +47,3 @@ uint8_t send_GetResult_request(uint32_t command_size,
                                 uint16_t command,
                                 uint16_t type,
                                 uint8_t * reponse);
-
-//créé un fichier dans l'emetteur
-//retourne 1 en cas de succès et 0 en cas d'échec
-uint8_t createFile(char name[], uint32_t size, char fileHandle[]);
-
-//supprime tous les fichiers de l'emetteur
-//retourne 1 en cas de succès et 0 en cas d'échec
-uint8_t deleteAllFiles();
-
-//écrit dans un fichier préalablement créé
-//retourne 1 en cas de succès et 0 en cas d'échec
-uint8_t writeInFile(char fileHandle[], char content[], uint32_t packetNb);
-
-// ouvre un fichier préalablement créé
-//retourne 1 en cas de succès et 0 en cas d'échec
-uint8_t openFile(char name[], char fileHandle[]);
-
-//lis le conenu d'un fichier préalablement ouvert
-//retourne 1 en cas de succès et 0 en cas d'échec
-uint8_t readFile(char fileHandle[], char lecture[]);
-
-//change les paramètres de l'emetteur
-uint8_t set_emitter_config(struct configuration * parametres);
-
-//active ou éteint le mode de transmission
-uint8_t tansmit_mode(uint8_t on);
-
-//envoie un fichier
-uint8_t sendFile(char fileName[]);

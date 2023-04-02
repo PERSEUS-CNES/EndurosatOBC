@@ -551,7 +551,7 @@ uint8_t send_GetResult_request(uint32_t command_size,
     return 1;
 }
 
-uint8_t createFile(char name[], char fileHandle[]) // constitue la commande pour créer un fichier et l'envoie à l'emetteur
+uint8_t createFile(char name[],uint32_t size , char fileHandle[]) // constitue la commande pour créer un fichier et l'envoie à l'emetteur
 {
     //header 0x45535550
     //Module id 0xXXXX
@@ -565,7 +565,7 @@ uint8_t createFile(char name[], char fileHandle[]) // constitue la commande pour
 	// construction de la commande à partir des informations récupérées de la documentation de l'emetteur
     uint32_t header = EMITTER_HEADER;//0x45 53 55 50;
     uint16_t id = EMITTER_ID;
-    uint16_t data_lenght = strlen(name)+1;
+    uint16_t data_lenght = strlen(name)+5;
     uint16_t command_status = 0x0000;
     uint16_t command = 0x0106; // commande createFile
     uint16_t type = 0x0000;

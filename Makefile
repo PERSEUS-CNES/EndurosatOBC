@@ -13,7 +13,11 @@ CC=gcc
 SRC_DIR = .
 SRCS = \
 main.c \
-emitterV1.c \
+emitter_commands.c \
+emitter_config.c \
+emitter_writing.c \
+emitter_reading.c \
+emitter_sending.c \
 es_crc32.c 
 
 

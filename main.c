@@ -4,7 +4,14 @@
 #include <assert.h>
 
 
-#include "emitterV1.h"
+//#include "emitterV1.h"
+#include "ftd2xx.h"
+#include "es_crc32.h"
+
+#include "emitter_config.h"
+#include "emitter_reading.h"
+#include "emitter_sending.h"
+#include "emitter_writing.h"
 
 uint8_t debug = 0;
 
@@ -69,7 +76,7 @@ int main(int argc, char * argv[])
 
     // création du fichier
     if(status)
-        status = createFile(namefile,cfileHandle);
+        status = createFile(namefile, 1000000,cfileHandle);
     usleep(wait);
  
     // écriture dans le fichier
