@@ -123,7 +123,7 @@ uint8_t deleteAllFiles()
 }
 
 
-uint8_t writeInFile(char fileHandle[], char content[], uint32_t packetNb)
+uint8_t writeInFile(char fileHandle[], char content[],uint16_t content_size, uint32_t packetNb)
 {
 	//header 0x45535550
     //Module id 0xXXXX
@@ -141,7 +141,6 @@ uint8_t writeInFile(char fileHandle[], char content[], uint32_t packetNb)
     uint16_t command = 0x0107;
     uint16_t type = 0x0000;
 	uint8_t *  data;
-	uint16_t content_size = strlen(content); 
 	uint16_t data_lenght = 10 + content_size;
 
 	printf("\ncontent %s data_len = %d\n",content, (int)content_size);
@@ -212,7 +211,7 @@ uint8_t writeMultiple(uint8_t fileHandle[], uint8_t content[], uint32_t buffer_s
 	while(current_Packet < nbPackets - 1 && status)
 	{
 		memcpy(data_to_write, content + BUFFER_MAX_LENGHT*current_Packet, BUFFER_MAX_LENGHT);
-		status = writeInFile(fileHandle, content, current_Packet);
+		status = writeInFile(fileHandle, content, BUFFER_MAX_LENGHT, current_Packet);
 		if(status)
 		{
 			current_Packet++;
@@ -223,7 +222,7 @@ uint8_t writeMultiple(uint8_t fileHandle[], uint8_t content[], uint32_t buffer_s
 	{
 		lenght_to_write = buffer_size - BUFFER_MAX_LENGHT*current_Packet;
 		memcpy(data_to_write, content + BUFFER_MAX_LENGHT*current_Packet, lenght_to_write);
-		status = writeInFile(fileHandle, content, current_Packet);
+		status = writeInFile(fileHandle, content,lenght_to_write, current_Packet);
 		if(status)
 		{
 			loop = 0;

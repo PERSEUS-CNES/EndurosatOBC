@@ -81,7 +81,7 @@ int main(int argc, char * argv[])
  
     // écriture dans le fichier
     if(status)
-        status = writeInFile(cfileHandle,ecrire,0);
+        status = writeInFile(cfileHandle,ecrire,strlen(ecrire),0);
     usleep(wait);
 
     
