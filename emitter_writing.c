@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include "ftd2xx.h"
 #include "emitter_commands.h"
 #include "emitter_writing.h"
 

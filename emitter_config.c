@@ -4,6 +4,7 @@
 #include "emitter_config.h"
 #include "emitter_commands.h"
 
+FT_HANDLE  ftHandle = NULL;
 uint8_t set_emitter_config(struct configuration * parametres,  parameters config_changes) 
 {
 	uint32_t header = EMITTER_HEADER;//0x45 53 55 50;
@@ -116,4 +117,88 @@ uint8_t set_emitter_config(struct configuration * parametres,  parameters config
 		return 0;
 	}
     return 1;
+}
+
+FT_STATUS initialize_FTDI(int baudRate, int portNum)
+{
+	FT_STATUS  ftStatus = FT_OK;
+	if (baudRate < 0)
+	{
+		baudRate = 3000000;
+	}	
+	
+	printf("Trying FTDI device %d at %d baud.\n", portNum, baudRate);
+	
+	ftStatus = FT_Open(portNum, &ftHandle);
+	if (ftStatus != FT_OK) 
+	{
+		printf("FT_Open(%d) failed, with error %d.\n", portNum, (int)ftStatus);
+		printf("Use lsmod to check if ftdi_sio (and usbserial) are present.\n");
+		printf("If so, unload them using rmmod, as they conflict with ftd2xx.\n");
+		goto exit;
+	}
+
+	assert(ftHandle != NULL);
+
+	ftStatus = FT_ResetDevice(ftHandle);
+	if (ftStatus != FT_OK) 
+	{
+		printf("Failure.  FT_ResetDevice returned %d.\n", (int)ftStatus);
+		goto exit;
+	}
+	
+	ftStatus = FT_SetBaudRate(ftHandle, (ULONG)baudRate);
+	if (ftStatus != FT_OK) 
+	{
+		printf("Failure.  FT_SetBaudRate(%d) returned %d.\n", 
+		       baudRate,
+		       (int)ftStatus);
+		goto exit;
+	}
+	// Paquets de 8 bits, 1 Stop bit , Pas de parit�
+	ftStatus = FT_SetDataCharacteristics(ftHandle, 
+	                                     FT_BITS_8,
+	                                     FT_STOP_BITS_1,
+	                                     FT_PARITY_NONE);
+	if (ftStatus != FT_OK) 
+	{
+		printf("Failure.  FT_SetDataCharacteristics returned %d.\n", (int)ftStatus);
+		goto exit;
+	}
+	                          
+	// Indicate our presence to remote computer
+	ftStatus = FT_SetDtr(ftHandle);
+	if (ftStatus != FT_OK) 
+	{
+		printf("Failure.  FT_SetDtr returned %d.\n", (int)ftStatus);
+		goto exit;
+	}
+
+	// Flow control is needed for higher baud rates
+	ftStatus = FT_SetFlowControl(ftHandle, FT_FLOW_NONE, 0, 0);
+	if (ftStatus != FT_OK) 
+	{
+		printf("Failure.  FT_SetFlowControl returned %d.\n", (int)ftStatus);
+		goto exit;
+	}
+
+	// Assert Request-To-Send to prepare remote computer
+	/*
+	ftStatus = FT_SetRts(ftHandle);
+	if (ftStatus != FT_OK) 
+	{
+		printf("Failure.  FT_SetRts returned %d.\n", (int)ftStatus);
+		goto exit;
+	}*/
+
+	
+	ftStatus = FT_SetTimeouts(ftHandle, 0, 0);	// 3 seconds
+	if (ftStatus != FT_OK) 
+	{
+		printf("Failure.  FT_SetTimeouts returned %d\n", (int)ftStatus);
+		goto exit;
+	}
+	
+	exit:
+		return ftStatus;
 }

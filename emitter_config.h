@@ -1,10 +1,11 @@
 #include <stdint.h>
 #include <stdlib.h>
+#include "ftd2xx.h"
 
 
 extern uint8_t debug;
 
-FT_HANDLE  ftHandle = NULL;
+extern FT_HANDLE  ftHandle;
 
 typedef enum  {all_parameters,
                         parm_symbol_rate, 
