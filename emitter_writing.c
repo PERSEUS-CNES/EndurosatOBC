@@ -198,7 +198,6 @@ uint8_t writeInFile(char fileHandle[], char content[],uint16_t content_size, uin
 }
 
 //répartit l'écriture d'un buffer de plus de 1472 octets pour l'écrire dans un seul fichier
-// pas encore testé
 uint8_t writeMultiple(uint8_t fileHandle[], uint8_t content[], uint32_t buffer_size)
 {
 	uint32_t nbPackets = (buffer_size / BUFFER_MAX_LENGHT  )+ 1;

@@ -44,41 +44,49 @@ uint8_t set_emitter_config(struct configuration * parametres,  parameters config
 			memcpy(data + 8, &(parametres -> center_frequency),sizeof(uint32_t));	
 		break;
 		case parm_symbol_rate:
+			type = 0x0040;
 			data_lenght = sizeof(uint8_t);
 			data = malloc(sizeof(uint8_t)*data_lenght);
 			memcpy(data, &(parametres -> symbol_rate),data_lenght);
 		break;
 		case parm_transmit_power:
+			type = 0x0041;
 			data_lenght = sizeof(uint8_t);
 			data = malloc(data_lenght);
 			memcpy(data, &(parametres -> transmit_power),data_lenght);
 		break;
 		case parm_MODCOD:
+			type = 0x0043;
 			data_lenght = sizeof(uint8_t);
 			data = malloc(data_lenght);
 			memcpy(data, &(parametres -> MODCOD),data_lenght);
 		break;
 		case parm_roll_off:
+			type = 0x0044;
 			data_lenght = sizeof(uint8_t);
 			data = malloc(data_lenght);
 			memcpy(data, &(parametres -> roll_off),data_lenght);
 		break;
 		case parm_pilot_signal:
+			type = 0x0045;
 			data_lenght = sizeof(uint8_t);
 			data = malloc(data_lenght);
 			memcpy(data, &(parametres -> pilot_signal),data_lenght);
 		break;
 		case parm_FEC_frame_size:
+			type = 0x0046;
 			data_lenght = sizeof(uint8_t);
 			data = malloc(data_lenght);
 			memcpy(data, &(parametres -> FEC_frame_size),data_lenght);
 		break;
 		case parm_pretransmission_delay:
+			type = 0x0047;	
 			data_lenght = sizeof(uint16_t);
 			data = malloc(data_lenght);
 			memcpy(data, &(parametres -> symbol_rate),data_lenght);
 		break;
 		case parm_center_frequency:
+			type = 0x0042;	
 			data_lenght = sizeof(float);
 			data = malloc(data_lenght);
 			memcpy(data, &(parametres -> center_frequency),data_lenght);

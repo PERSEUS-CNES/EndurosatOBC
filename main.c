@@ -15,33 +15,19 @@
 
 uint8_t debug = 0;
 
-
+//ce programme a pour but de tester la configuration et le passage au mode "transmit" de l'emetteur
 int main(int argc, char * argv[])
 {
-    /*uint8_t newTestCreateFile [] = {0x45, 0x53, 0x55 , 0x50 , 0x07, 0x20, 0x0E, 0x00, 0x00, 0x00, 0x06, 0x01, 0x00,  0x00,  0x4E, 0x65, 0x77, 0x5F, 0x46, 0x69, 0x6C, 0x65, 0x2E, 0x74, 0x78, 0x74, 0x00, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00 , 0x00 , 0x00 , 0x00 , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-    uint8_t taille = sizeof(newTestCreateFile);
-    printf(" taille avant fonction %d \n", (int)taille);
-    send_command_request(newTestCreateFile,28,taille);*/
     
-   /* uint8_t newTestCreateFile [] = {0x45, 0x53, 0x55 , 0x50 , 0x06, 0x20, 0x0E, 0x00, 0x00, 0x00, 0x06, 0x01, 0x00,  0x00,  0x4E, 0x65, 0x77, 0x5F, 0x46, 0x69, 0x6C, 0x65, 0x2E, 0x74, 0x78, 0x74, 0x00, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00 , 0x00 , 0x00 , 0x00 , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-    unsigned int crc=crc32(0,newTestCreateFile,28);
-	printf("\n  crc value  %.4X \n",crc);
-	memcpy(newTestCreateFile+28,&crc,sizeof(uint32_t));
-    printf("commande : ");
-    for(int i = 0; i < 48; i++)
-    {
-        printf("%.2X " ,(int)newTestCreateFile[i]);
-    }
-    printf("\n");*/
 
-    if(argc > 1)
-    {
+    if(argc > 1) // ecrire DEBUG_ON en parametre afin de print intégralement les commandes envoyées
+    {            // et les réponses
         if(!strcmp(argv[1],"DEBUG_ON"))
         debug = 1;
     }
-    
-    int port = 0;//atoi(argv[1]);
-    int baud = 3000000;//atoi(argv[2]);
+    // initialisation du port FTDI
+    int port = 0;
+    int baud = 3000000;
     uint8_t status = 0;//boolen
     uint32_t wait = 5000;
     
@@ -51,68 +37,41 @@ int main(int argc, char * argv[])
     // configuration de l'emetteur
     struct configuration param;
     param.symbol_rate = 5;
-    param.transmit_power = 27;
+    param.transmit_power = 32; // 
     param.MODCOD = 1;
     param.roll_off = 0;
     param.pilot_signal = 1;
     param.FEC_frame_size = 0;
     param.pretransmission_delay = 3000;
     param.center_frequency = 2450.0000;
+
+    //passage en mode idle pour pouvoir tester le passage en mode transmission 
+    status = transmit_mode(0);
+    usleep(wait);//delai necessaire entre 2 commandes
     
+    // envoi de la config de l'emetteur
+    //lors de nos tests nous obtenons une réponse "NO COMMAND FOR EXECUTION" de la part de l'emetteur
+    //tant bien meme que la commande à bien été prise en compte
     status = set_emitter_config(&param, all_parameters);
+    // pour les tests, un echec de la configuration ne conduit pas a un renvoi de la fonction
+    // ceci sera implémenté lors de la version finale
 
-    // suppression de tout les fichiers
-    status = deleteAllFiles();
-    usleep(wait);
-    char namefile[] = "ennvoye.txt";
-    char ecrire[] = "ANTHONY TU MENTEND";
-    char * cfileHandle;
-    cfileHandle = malloc(sizeof(uint8_t)*4);
-    char * ofileHandle;
-    ofileHandle = malloc(sizeof(uint8_t)*4);
+    usleep(10000000); // delai de 10 secondes pour pouvoir observer la réponse
 
-    uint16_t tailleFichier = 256;
-    char lecture[tailleFichier];
-
-    // création du fichier
-    if(status)
-        status = createFile(namefile, 1000000,cfileHandle);
-    usleep(wait);
- 
-    // écriture dans le fichier
-    if(status)
-        status = writeInFile(cfileHandle,ecrire,strlen(ecrire),0);
-    usleep(wait);
+    //passage en mode transmission
+    //en cas de succes, on s'attend à ce que l'emmeteur consome entre 0.48 et 0.51 amperes
+    //pour la puissance séléctionnée
+    //lors de nos tests, l'emetteur de consome que 0.27 amperes, peu importe la puissance séléctionnée
+    //cela s'acompagne d'une absence de signal emis lors de l'envoi d'un fichier
+    status = transmit_mode(1);
 
     
+    usleep(10000000); // delai de 10 secondes pour pouvoir observer la réponse
 
-    // ouverture du fichier
-    /*if(status)
-        status = openFile(namefile,ofileHandle);
-    usleep(wait);
-    
-    // lecture du fichier
-    if(status)
-        status = readFile(ofileHandle,lecture);
-    usleep(wait);*/
+    status = transmit_mode(0); // extinction de l'emetteur 
 
-    // transmit mode
-    if(status)
-        status = tansmit_mode(1);
-    usleep(wait);
 
-    // send file
-    if(status)
-        status = sendFile(namefile);
-    usleep(wait);
-
-    if(status)
-        status = tansmit_mode(0);
-    usleep(wait);
-
-    free(cfileHandle);
-    free(ofileHandle);
-
+      
 
     return 0;
 }

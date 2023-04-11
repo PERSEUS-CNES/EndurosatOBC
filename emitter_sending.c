@@ -7,6 +7,9 @@
 #include "emitter_sending.h"
 
 
+// envoie le fichier séléctionné par son nom
+// le fichier doit etre préalabmement créé avec la fonction create_file
+// l'emetteur doit etre passé en mode "transmit" par la fonction transmit_mode()
 uint8_t sendFile(char fileName[])
 {
 	uint32_t header = EMITTER_HEADER;//0x45 53 55 50;
@@ -58,6 +61,7 @@ uint8_t sendFile(char fileName[])
     return 1;
 }
 
+//change le mode de transmit si on = 1, et idle si on = 0
 uint8_t tansmit_mode(uint8_t on)
 {
 	uint32_t header = EMITTER_HEADER;//0x45 53 55 50;
