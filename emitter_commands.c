@@ -293,7 +293,7 @@ uint8_t send_command_request(uint32_t command_size,
 		}
 		//printf("loop 01 = %d\n",(int)loop_01);
 	}
-	usleep(2000);
+	//usleep(1);
 
     return 1;
 }
@@ -434,7 +434,7 @@ uint8_t send_GetResult_request(uint32_t command_size,
 						printf("NO COMMAND FOR EXECUTION\n");
 						usleep(1000);
 						loop_01 = 0;
-						//return 0;
+						return 0;
 					}
 					else if(RxBuffer[8] == 0x07)
 					{

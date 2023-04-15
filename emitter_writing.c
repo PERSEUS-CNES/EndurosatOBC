@@ -18,21 +18,23 @@ uint8_t createFile(char name[],uint32_t size , char fileHandle[]) // constitue l
     //crc
 
 	// construction de la commande à partir des informations récupérées de la documentation de l'emetteur
-    uint32_t header = EMITTER_HEADER;//0x45 53 55 50;
+	uint16_t name_lenght = strlen(name) + 1 ; //1 caractere en plus pour  prendre en compte \0
+	uint32_t header = EMITTER_HEADER;//0x45 53 55 50;
     uint16_t id = EMITTER_ID;
-    uint16_t data_lenght = strlen(name)+5;
+    uint16_t data_lenght = name_lenght + 4; //taille des data : nom + 4 pour la taille
     uint16_t command_status = 0x0000;
     uint16_t command = 0x0106; // commande createFile
     uint16_t type = 0x0000;
 	uint8_t  data_read[10];
-
+	
     uint8_t *  data = malloc(sizeof(uint8_t)*(data_lenght));
 
     uint8_t status = 0;
 	uint8_t try = 1;
-
     int comm_lenght = 48;
-    memcpy(data,name,sizeof(uint8_t)*data_lenght);
+    memcpy(data, name,sizeof(uint8_t)*name_lenght);
+	memcpy(data+name_lenght, &size,sizeof(uint8_t)*4);
+	
 
 	while(try){
 		try = 0;
@@ -144,7 +146,7 @@ uint8_t writeInFile(char fileHandle[], char content[],uint16_t content_size, uin
 	uint8_t *  data;
 	uint16_t data_lenght = 10 + content_size;
 
-	printf("\ncontent %s data_len = %d\n",content, (int)content_size);
+	printf("\ndata_len = %d\n",(int)content_size);
 	
 	//uint32_t packetNb = 0; 
 	data = malloc(sizeof(uint8_t)*(data_lenght));
@@ -159,12 +161,6 @@ uint8_t writeInFile(char fileHandle[], char content[],uint16_t content_size, uin
 	{
 		data[i + 10] = content[i];
 	}
-
-	for(int i = 0; i < 10 + content_size; i++)
-	{
-		printf("%d ",(int)data[i]);
-	}
-	printf("\n");
 
 	uint8_t status = 0;
 	printf("ECRITURE\n");
@@ -200,7 +196,7 @@ uint8_t writeInFile(char fileHandle[], char content[],uint16_t content_size, uin
 //répartit l'écriture d'un buffer de plus de 1472 octets pour l'écrire dans un seul fichier
 uint8_t writeMultiple(uint8_t fileHandle[], uint8_t content[], uint32_t buffer_size)
 {
-	uint32_t nbPackets = (buffer_size / BUFFER_MAX_LENGHT  )+ 1;
+	uint32_t nbPackets = (buffer_size / BUFFER_MAX_LENGHT  )+ 1; // conne le nombre de packets à envoyer
 	uint32_t current_Packet = 0;
 
 	uint8_t loop = 1;
@@ -208,27 +204,27 @@ uint8_t writeMultiple(uint8_t fileHandle[], uint8_t content[], uint32_t buffer_s
 	uint8_t data_to_write[BUFFER_MAX_LENGHT];
 	uint32_t lenght_to_write = 0;
 	
-	while(current_Packet < nbPackets - 1 && status)
+	while(current_Packet < nbPackets - 1 && status) // envoie le contenu par tranches de 1472 bytes
 	{
+		printf("---------------------------------Packet number = %d\n", (int)current_Packet);
 		memcpy(data_to_write, content + BUFFER_MAX_LENGHT*current_Packet, BUFFER_MAX_LENGHT);
 		status = writeInFile(fileHandle, content, BUFFER_MAX_LENGHT, current_Packet);
 		if(status)
 		{
 			current_Packet++;
+			
 		}
 		usleep(5000);
 	}
-	while(current_Packet + 1  == nbPackets && loop)
-	{
-		lenght_to_write = buffer_size - BUFFER_MAX_LENGHT*current_Packet;
-		memcpy(data_to_write, content + BUFFER_MAX_LENGHT*current_Packet, lenght_to_write);
-		status = writeInFile(fileHandle, content,lenght_to_write, current_Packet);
-		if(status)
-		{
-			loop = 0;
-		}
-		usleep(5000);
-	}
+
+	// envoie le dernier packet
+	lenght_to_write = buffer_size - BUFFER_MAX_LENGHT*current_Packet;
+	memcpy(data_to_write, content + BUFFER_MAX_LENGHT*current_Packet, lenght_to_write);
+	status = writeInFile(fileHandle, content,lenght_to_write, current_Packet);
+	loop = 0;
+	usleep(5000);
 	
+
+	return 1;
 
 }

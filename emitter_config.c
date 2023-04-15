@@ -80,13 +80,13 @@ uint8_t set_emitter_config(struct configuration * parametres,  parameters config
 			memcpy(data, &(parametres -> FEC_frame_size),data_lenght);
 		break;
 		case parm_pretransmission_delay:
-			type = 0x0047;	
+			type = 0x0047;
 			data_lenght = sizeof(uint16_t);
 			data = malloc(data_lenght);
 			memcpy(data, &(parametres -> symbol_rate),data_lenght);
 		break;
 		case parm_center_frequency:
-			type = 0x0042;	
+			type = 0x0042;
 			data_lenght = sizeof(float);
 			data = malloc(data_lenght);
 			memcpy(data, &(parametres -> center_frequency),data_lenght);
@@ -100,9 +100,11 @@ uint8_t set_emitter_config(struct configuration * parametres,  parameters config
     free(data);
 	if(!status)
         return 0;
-        
+
+    //usleep(10000);
+    
     printf("commande de configuration  à  marchée\n");
-    type = command;
+    type = 0x0101;//command;
     command = 0x0114;
     comm_lenght = 32;
     data_lenght = 0;
@@ -209,4 +211,52 @@ FT_STATUS initialize_FTDI(int baudRate, int portNum)
 	
 	exit:
 		return ftStatus;
+}
+
+
+
+uint8_t safe_shutdown()
+{
+	uint32_t header = EMITTER_HEADER;//0x45 53 55 50;
+    uint16_t id = EMITTER_ID;
+    uint16_t data_lenght = 0;
+    uint16_t command_status = 0x0000;
+    uint16_t command = 0x0113;
+	
+    uint16_t type = 0x0000;
+	uint8_t data[1];
+	data[0] = 0;
+	uint8_t data_read[2];
+
+	uint8_t status = 0;
+
+	int comm_lenght = 32;
+
+	status = send_command_request(comm_lenght,header,id,data_lenght,command_status,command,type,data);
+	if(!status)
+        return 0;
+        
+    printf("commande de shut down\n");
+    type = command;
+    command = 0x0114;
+    comm_lenght = 32;
+    data_lenght = 0;
+    printf("send getResult pour shut down \n");
+    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_read);    
+  
+    if(!status)
+        return 0;
+        
+    printf("send getResult  à  marché\n");
+	printf("shut down result %2.X\n",(int)data_read[0]);
+	if(data_read[0] == 0x00)
+	{
+		printf("shutting donw emitter");
+	}
+	else
+	{
+		printf("echec de shutdown");
+		return 0;
+	}
+    return 1;
 }
