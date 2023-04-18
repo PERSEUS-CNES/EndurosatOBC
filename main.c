@@ -15,76 +15,60 @@
 
 uint8_t debug = 0;
 
-// test l'ecriture de fichiers de taille importante
-// le programme s'arrete si une des commandes ne fonctionne pas
+//ce programme a pour but de tester la configuration et le passage au mode "transmit" de l'emetteur
 int main(int argc, char * argv[])
 {
-   
-    if(argc > 1)
-    {
+
+
+    if(argc > 1) // ecrire DEBUG_ON en parametre afin de print intégralement les commandes envoyées
+    {            // et les réponses
         if(!strcmp(argv[1],"DEBUG_ON"))
         debug = 1;
     }
-    
-    int port = 0;//atoi(argv[1]);
-    int baud = 3000000;//atoi(argv[2]);
+    // initialisation du port FTDI
+    int port = 0;
+    int baud = 3000000;
     uint8_t status = 0;//boolen
     uint32_t wait = 5000;
-    
-    FT_STATUS status_ft = initialize_FTDI(baud, port);
-    
-    // suppression de tout les fichiers
-    status = deleteAllFiles();
-    usleep(wait);
-    char namefile[] = "file.txt";
 
+    // configuration de l'emetteur
+    struct configuration param;
+    param.symbol_rate = 5;
+    param.transmit_power = 32; // 
+    param.MODCOD = 1;
+    param.roll_off = 0;
+    param.pilot_signal = 1;
+    param.FEC_frame_size = 0;
+    param.pretransmission_delay = 3000;
+    param.center_frequency = 2450.0000;
 
-    char * cfileHandle;
-    cfileHandle = malloc(sizeof(uint8_t)*4);
-    //char * ofileHandle;
-    //ofileHandle = malloc(sizeof(uint8_t)*4);
+    //passage en mode idle pour pouvoir tester le passage en mode transmission 
+    status = transmit_mode(0);
+    usleep(wait);//delai necessaire entre 2 commandes
 
-    //uint16_t tailleFichier = 256;
-    //char lecture[tailleFichier];
-    
-    // création du fichier
-    const int taille_ecriture = 1000000; // taille de fichier : 1 giga octet
-    uint8_t ecriture[taille_ecriture];
-    for(int i = 0; i < taille_ecriture; i++)
-    {
-        if(i%2 == 0)
-        {
-            ecriture[i] = 'A';
-        }
-        else
-        {
-            ecriture[i] = 'B';
-        }
-    }
-    //creation du fichier de 1 go
-    if(status)
-        status = createFile(namefile, taille_ecriture,cfileHandle);
-    usleep(wait);
+    // envoi de la config de l'emetteur
+    //lors de nos tests nous obtenons une réponse "NO COMMAND FOR EXECUTION" de la part de l'emetteur
+    //tant bien meme que la commande à bien été prise en compte
+    status = set_emitter_config(&param, all_parameters);
+    // pour les tests, un echec de la configuration ne conduit pas a un renvoi de la fonction
+    // ceci sera implémenté lors de la version finale
+
+    usleep(10000000); // delai de 10 secondes pour pouvoir observer la réponse
+
+    //passage en mode transmission
+    //en cas de succes, on s'attend à ce que l'emmeteur consome entre 0.48 et 0.51 amperes
+    //pour la puissance séléctionnée
+    //lors de nos tests, l'emetteur de consome que 0.27 amperes, peu importe la puissance séléctionnée
+    //cela s'acompagne d'une absence de signal emis lors de l'envoi d'un fichier
+    status = transmit_mode(1);
+    usleep(10000000); // delai de 10 secondes pour pouvoir observer la réponse
+
     
 
-    // écriture dans le fichier
-    if(status)
-        status = writeMultiple(cfileHandle,ecriture,taille_ecriture);
-    usleep(wait);
+    status = transmit_mode(0); // extinction de l'emetteur 
 
-    // ouverture du fichier
-    /*if(status)
-        status = openFile(namefile,ofileHandle);
-    usleep(wait);
-    
-    // lecture du fichier
-    if(status)
-        status = readFile(ofileHandle,lecture);
-    usleep(wait);*/
 
-    free(cfileHandle);
-    //free(ofileHandle);
 
-    printf("Fin de l'execution\n");
+
     return 0;
 }

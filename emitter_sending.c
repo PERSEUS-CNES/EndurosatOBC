@@ -16,8 +16,8 @@ uint8_t sendFile(char fileName[])
     uint16_t id = EMITTER_ID;
     uint16_t data_lenght = strlen(fileName)+1;
     uint16_t command_status = 0x0000;
-    uint16_t command = 0x0108;
-    uint16_t type = 0x0000;
+    uint16_t command = 0x010A;
+    uint16_t type = 0x0050;
 	uint8_t  data_read[10];
 
     uint8_t *  data = malloc(sizeof(uint8_t)*(data_lenght));
