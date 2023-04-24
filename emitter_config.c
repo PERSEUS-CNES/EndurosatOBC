@@ -104,11 +104,12 @@ uint8_t set_emitter_config(struct configuration * parametres,  parameters config
     //usleep(10000);
     
     printf("commande de configuration  à  marchée\n");
-	uint8_t data_get[1] = {0};
+	data_lenght = 0x0002;
+    uint8_t data_get[2];
+    memcpy(data_get, &type,sizeof(uint8_t)*data_lenght);
     type = command;//command;
     command = 0x0114;
     comm_lenght = 32;
-    data_lenght = 0;
     printf("send getResult pour la configuration \n");
     status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_get,lecture);    
   
