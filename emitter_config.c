@@ -104,12 +104,13 @@ uint8_t set_emitter_config(struct configuration * parametres,  parameters config
     //usleep(10000);
     
     printf("commande de configuration  à  marchée\n");
-    type = 0x0101;//command;
+	uint8_t data_get[1] = {0};
+    type = command;//command;
     command = 0x0114;
     comm_lenght = 32;
     data_lenght = 0;
     printf("send getResult pour la configuration \n");
-    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,lecture);    
+    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_get,lecture);    
   
     if(!status)
         return 0;
@@ -237,12 +238,13 @@ uint8_t safe_shutdown()
         return 0;
         
     printf("commande de shut down\n");
+	uint8_t data_get[1] = {0};
     type = command;
     command = 0x0114;
     comm_lenght = 32;
     data_lenght = 0;
     printf("send getResult pour shut down \n");
-    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_read);    
+    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_get,data_read);    
   
     if(!status)
         return 0;

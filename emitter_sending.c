@@ -37,12 +37,15 @@ uint8_t sendFile(char fileName[])
         return 0;
         
     printf("commande transmit mode marchée\n");
+    free(data);
+    data_lenght = 0x0002;
+    uint8_t data_get[2];
+    memcpy(data_get, &type,sizeof(uint8_t)*data_lenght);
     type = command;
     command = 0x0114;
     comm_lenght = 32;
-    data_lenght = 0;
     printf("send getResult pour transmit mode \n");
-    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_read);    
+    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_get,data_read);    
   
     if(!status)
         return 0;
@@ -92,12 +95,13 @@ uint8_t tansmit_mode(uint8_t on)
         return 0;
         
     printf("commande de mode de transmission a marche \n");
+    uint8_t data_get[1] = {0};
     type = command;
     command = 0x0114;
     comm_lenght = 32;
     data_lenght = 0;
     printf("send getResult pour le mode d'envoi \n");
-    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_read);    
+    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_get,data_read);    
   
     if(!status)
         return 0;

@@ -42,12 +42,13 @@ uint8_t openFile(char name[], char fileHandle[])
         return 0;
         
     printf("commande d'ouverture du fichier à  marchée\n");
+    uint8_t data_get[1] = {0};
     type = command;
     command = 0x0114;
     comm_lenght = 32;
     data_lenght = 0;
     printf("send getResult pour l'ouverture du fichier \n");
-    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_read);    
+    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_get,data_read);    
   
     if(!status)
         return 0;
@@ -95,12 +96,13 @@ uint8_t readFile(char fileHandle[], char lecture[])
         return 0;
         
     printf("commande de lecture du fichier à  marchée\n");
+    uint8_t data_get[1] = {0};
     type = command;
     command = 0x0114;
     comm_lenght = 32;
     data_lenght = 0;
     printf("send getResult pour la lecture du fichier \n");
-    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,lecture);    
+    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_get,lecture);    
   
     if(!status)
         return 0;

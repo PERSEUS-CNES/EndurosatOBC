@@ -46,13 +46,14 @@ uint8_t createFile(char name[],uint32_t size , char fileHandle[]) // constitue l
         return 0;
         
     printf("commande de creation du fichier à  marchée\n");
+	uint8_t data_get[1] = {0};
     type = command;
     command = 0x0114; // commande de la requete 'getResult'
     comm_lenght = 32;
     data_lenght = 0;
     printf("send getResult pour la création du fichier \n");
 	// envoi de la requete getResult et récuperation de la réponse
-    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_read);    
+    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_get,data_read);    
   
     if(!status)
         return 0;
@@ -110,11 +111,11 @@ uint8_t deleteAllFiles()
 	{
 		//return 0;
 	}
-
+	uint8_t data_get[1] = {0};
 	type = command;
 	command = 0x0114;
 	uint8_t data_read[10];
-	status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_read);
+	status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_get,data_read);
 	printf("delete All result %d \n",(int)data_read[0]);
 	if(!status)
 	{
@@ -175,9 +176,9 @@ uint8_t writeInFile(char fileHandle[], char content[],uint16_t content_size, uin
 	type = command;
 	command = 0x0114;
 	uint8_t data_read[10];
-
+	uint8_t data_get[1] = {0};
 	comm_lenght = 32;
-	status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_read);
+	status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_get,data_read);
 	printf("write result %d \n",(int)data_read[0]);
 	if(!status)
 	{

@@ -46,4 +46,5 @@ uint8_t send_GetResult_request(uint32_t command_size,
                                 uint16_t command_status,
                                 uint16_t command,
                                 uint16_t type,
+                                uint8_t * data,
                                 uint8_t * reponse);
