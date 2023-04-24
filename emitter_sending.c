@@ -65,7 +65,7 @@ uint8_t sendFile(char fileName[])
 }
 
 //change le mode de transmit si on = 1, et idle si on = 0
-uint8_t tansmit_mode(uint8_t on)
+uint8_t transmit_mode(uint8_t on)
 {
 	uint32_t header = EMITTER_HEADER;//0x45 53 55 50;
     uint16_t id = EMITTER_ID;
