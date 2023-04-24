@@ -354,7 +354,10 @@ uint8_t send_GetResult_request(uint32_t command_size,
     memcpy(command_buffer + current_position,&type,sizeof(uint16_t));
     current_position += 2;
     
-    //data
+    
+	//data
+	memcpy(command_buffer + current_position,data,sizeof(uint8_t)*data_lenght);
+    current_position = current_position + data_lenght;
 
     //crc
     crc=crc32(0,command_buffer,current_position);
