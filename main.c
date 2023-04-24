@@ -63,8 +63,44 @@ int main(int argc, char * argv[])
     status = transmit_mode(1);
     usleep(10000000); // delai de 10 secondes pour pouvoir observer la réponse
 
-    
+    // creation du fichier à envoyer
+    char file_name[] = "test_file.txt";
+    uint8_t * fileHandle = malloc(sizeof(uint8_t)*4);
+    uint32_t fileSize = 100000000; // fichier de 100 MB
 
+    uint8_t ecriture[fileSize]; //buffer qui sera écrit dans le fichier
+
+    //construction du buffer
+    for(int i = 0; i < fileSize; i++)
+    {
+        if(i%2 == 0)
+        {
+            ecriture[i] = 'A';
+        }
+        else
+        {
+            ecriture[i] = 'B';
+        }
+    }
+
+    //creation du fichier
+    status = createFile(file_name,fileSize, fileHandle);
+
+    //ecriture dans le fichier
+    if(status)
+    {
+        //répartit le buffer en plusieurs buffers qui seront envoyés
+        //un par un dans le fichier
+        status = writeMultiple(fileHandle,ecriture,fileSize);
+    }
+
+
+    if(status)
+    {
+        status = sendFile(file_name);
+    }
+    usleep(10000000); // delai de 10 secondes pour pouvoir observer la réponse
+    
     status = transmit_mode(0); // extinction de l'emetteur 
 
 
