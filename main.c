@@ -34,7 +34,7 @@ int main(int argc, char * argv[])
     // configuration de l'emetteur
     struct configuration param;
     param.symbol_rate = 5;
-    param.transmit_power = 32; // 
+    param.transmit_power = 32; 
     param.MODCOD = 1;
     param.roll_off = 0;
     param.pilot_signal = 1;
