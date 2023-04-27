@@ -60,14 +60,14 @@ uint8_t createFile(char name[],uint32_t size , char fileHandle[]) // constitue l
 	
         
     printf("send getResult  à  marché\n");
-	printf("create result %2.X\n",(int)data_read[0]);
+	printf("create result %.2X\n", data_read[0]);
 	if(data_read[0] == 0x00)
 	{
 		printf("le fichier à été créé; handle : \n");
 		for(int i = 0; i < 4; i++)
 		{
 			fileHandle[i] = data_read[1+i];
-			printf("%2.X",fileHandle[i]);
+			printf("%.2X",fileHandle[i]);
 
 		}
 	}
@@ -179,7 +179,7 @@ uint8_t writeInFile(char fileHandle[], char content[],uint16_t content_size, uin
 	uint8_t data_get[1] = {0};
 	comm_lenght = 32;
 	status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_get,data_read);
-	printf("write result %d \n",(int)data_read[0]);
+	printf("write result %.2X \n", data_read[0]);
 	if(!status)
 	{
 		printf("echec lors de la récupération de la réponse\n");
@@ -197,7 +197,8 @@ uint8_t writeInFile(char fileHandle[], char content[],uint16_t content_size, uin
 //répartit l'écriture d'un buffer de plus de 1472 octets pour l'écrire dans un seul fichier
 uint8_t writeMultiple(uint8_t fileHandle[], uint8_t content[], uint32_t buffer_size)
 {
-	uint32_t nbPackets = (buffer_size / BUFFER_MAX_LENGHT  )+ 1; // conne le nombre de packets à envoyer
+	uint32_t nbPackets = (buffer_size / BUFFER_MAX_LENGHT); // conne le nombre de packets à envoyer
+	
 	uint32_t current_Packet = 0;
 
 	uint8_t loop = 1;
@@ -205,27 +206,35 @@ uint8_t writeMultiple(uint8_t fileHandle[], uint8_t content[], uint32_t buffer_s
 	uint8_t data_to_write[BUFFER_MAX_LENGHT];
 	uint32_t lenght_to_write = 0;
 	
-	while(current_Packet < nbPackets - 1 && status) // envoie le contenu par tranches de 1472 bytes
+	while(current_Packet < nbPackets && status) // envoie le contenu par tranches de 1472 bytes
 	{
 		printf("---------------------------------Packet number = %d\n", (int)current_Packet);
 		memcpy(data_to_write, content + BUFFER_MAX_LENGHT*current_Packet, BUFFER_MAX_LENGHT);
-		status = writeInFile(fileHandle, content, BUFFER_MAX_LENGHT, current_Packet);
+		status = writeInFile(fileHandle, data_to_write, BUFFER_MAX_LENGHT, current_Packet);
 		if(status)
 		{
 			current_Packet++;
-			
+		}
+		else
+		{
+			printf("Write ERROR !!!!!!!\n");
+			//printf("!!!!!!!!!!! Restart from begin\n");
+			//deleteAllFiles();
+			//current_Packet = 0;
+			//exit(0);
 		}
 		usleep(5000);
 	}
 
 	// envoie le dernier packet
-	lenght_to_write = buffer_size - BUFFER_MAX_LENGHT*current_Packet;
-	memcpy(data_to_write, content + BUFFER_MAX_LENGHT*current_Packet, lenght_to_write);
-	status = writeInFile(fileHandle, content,lenght_to_write, current_Packet);
+	lenght_to_write = buffer_size - (BUFFER_MAX_LENGHT * nbPackets);
+	if(lenght_to_write > 0)
+	{
+		memcpy(data_to_write, content + BUFFER_MAX_LENGHT*current_Packet, lenght_to_write);
+		status = writeInFile(fileHandle, data_to_write,lenght_to_write, current_Packet);	
+	}
 	loop = 0;
 	usleep(5000);
 	
-
 	return 1;
-
 }

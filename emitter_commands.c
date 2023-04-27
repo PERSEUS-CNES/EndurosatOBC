@@ -62,7 +62,7 @@ void readData(uint8_t buffer[] , uint8_t * data_target)
 	}
 	printf("data : ");
 	for(int i = 0; i < data_lenght; i++ ){
-	printf("%d , ",(int)data_target[i]);}
+		printf("%.2X , ", data_target[i]);}
     printf(";\n");
 }
 
@@ -106,7 +106,6 @@ uint8_t send_command_request(uint32_t command_size,
 		RxBuffer[i] = 0x00;
 	}
     
-    
     uint16_t current_position = 0; // position actuelle dans le buffer
     
 	// construction du buffer contenant la commande à envoyer
@@ -149,7 +148,7 @@ uint8_t send_command_request(uint32_t command_size,
     	printf("commande : \n");
     	for(int i = 0; i < command_size; i++)
     	{
-        	printf("%.2X " ,(int)command_buffer[i]);
+        	printf("%.2X " , command_buffer[i]);
     	}
     	printf("\n");
 	}
@@ -208,7 +207,6 @@ uint8_t send_command_request(uint32_t command_size,
 			loop_02 = 0;
 			RxBytes=0;
 			
-	
 			gettimeofday(&start, NULL); // enregistre l'heure actuelle dans la variable start
 			uint32_t start_ms_wait_resp = (start.tv_sec * SEC_IN_MICRO) + start.tv_usec;
 	
@@ -247,7 +245,7 @@ uint8_t send_command_request(uint32_t command_size,
 						printf("Reponse Commande : "); // affiche la réponse
 						for(int i = 0; i < BytesReceived; i++)
 						{
-							printf("%d ",(int)RxBuffer[i]);
+							printf("%.2X ", RxBuffer[i]);
 						}
 						printf("\n");
 					}
@@ -319,18 +317,15 @@ uint8_t send_GetResult_request(uint32_t command_size,
 	struct timeval start;  // timer
 	struct timeval temps_actuel;
 
-    
-
     uint8_t command_buffer[command_size];
     for(int i = 0; i < command_size; i++) // initialisation
     {
         command_buffer[i] = 0x00;
     }
-    int current_position = 0;
-    
+    int current_position = 0;    
 
 	// construction du buffer contenant la commande à envoyer
-   //header
+    //header
     memcpy(command_buffer, &header,sizeof(uint32_t));
     current_position = current_position + 4;
 

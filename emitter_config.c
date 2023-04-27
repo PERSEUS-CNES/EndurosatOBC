@@ -95,7 +95,7 @@ uint8_t set_emitter_config(struct configuration * parametres,  parameters config
 	
 	
 
-	printf("configuration");
+	printf("configuration\n");
     status = send_command_request(comm_lenght,header,id,data_lenght,command_status,command,type,data);
     free(data);
 	if(!status)
@@ -121,6 +121,58 @@ uint8_t set_emitter_config(struct configuration * parametres,  parameters config
 	if(lecture[0] == 0x00)
 	{
 		printf("configuration acceptée\n");
+		
+	}
+	else
+	{
+		printf("echec dans la configuration\n");
+		return 0;
+	}
+    return 1;
+}
+
+uint8_t get_emitter_config(struct configuration * parametres,  parameters config_changes) 
+{
+	uint32_t header = EMITTER_HEADER;//0x45 53 55 50;
+    uint16_t id = EMITTER_ID;
+    uint16_t data_lenght = 0;
+    uint16_t command_status = 0x0000;
+    uint16_t command = 0x0100;
+    uint16_t type = 0x0048;
+	uint8_t * data;
+	uint8_t lecture[1];
+
+	uint8_t comm_lenght = 32;
+	uint8_t status = 0;
+
+	data = malloc(sizeof(uint16_t)*1);
+	
+	printf("GET configuration\n");
+    status = send_command_request(comm_lenght,header,id,data_lenght,command_status,command,type,data);
+    free(data);
+	if(!status)
+        return 0;
+
+    //usleep(10000);
+    
+    printf("commande de configuration  à  marchée\n");
+	data_lenght = 0x0002;
+    uint8_t data_get[2];
+    memcpy(data_get, &type,sizeof(uint8_t)*data_lenght);
+    type = command;//command;
+    command = 0x0114;
+    comm_lenght = 32;
+    printf("send getResult pour la configuration \n");
+    status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_get,lecture);    
+  
+    if(!status)
+        return 0;
+        
+    printf("send getResult  à  marché\n");
+	printf("GET config result %d\n",(int)lecture[0]);
+	if(lecture[0] == 0x00)
+	{
+		printf("GET configuration acceptée\n");
 		
 	}
 	else
@@ -251,7 +303,7 @@ uint8_t safe_shutdown()
         return 0;
         
     printf("send getResult  à  marché\n");
-	printf("shut down result %2.X\n",(int)data_read[0]);
+	printf("shut down result %.2X\n", data_read[0]);
 	if(data_read[0] == 0x00)
 	{
 		printf("shutting donw emitter");

@@ -37,7 +37,7 @@ uint8_t sendFile(char fileName[])
         return 0;
         
     printf("commande transmit mode marchée\n");
-    free(data);
+    //free(data);
     data_lenght = 0x0002;
     uint8_t data_get[2];
     memcpy(data_get, &type,sizeof(uint8_t)*data_lenght);
@@ -51,7 +51,7 @@ uint8_t sendFile(char fileName[])
         return 0;
         
     printf("send getResult  à  marché\n");
-	printf("send result %2.X\n",(int)data_read[0]);
+	printf("send result %.2X\n", data_read[0]);
 	if(data_read[0] == 0x00)
 	{
 		printf("-------------------------------------------le fichier à été envoyé\n");
@@ -107,7 +107,7 @@ uint8_t transmit_mode(uint8_t on)
         return 0;
         
     printf("send getResult  à  marché\n");
-	printf("transmit result %2.X\n",(int)data_read[0]);
+	printf("transmit result %.2X\n", data_read[0]);
 	if(data_read[0] == 0x00)
 	{
 		printf("le mode de transmission a ete changé à %d .\n", (int)on );

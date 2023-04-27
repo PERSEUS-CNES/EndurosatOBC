@@ -54,14 +54,14 @@ uint8_t openFile(char name[], char fileHandle[])
         return 0;
         
     printf("send getResult  à  marché\n");
-	printf("open result %2.X\n",(int)data_read[0]);
+	printf("open result %.2X\n", data_read[0]);
 	if(data_read[0] == 0x00)
 	{
 		printf("le fichier à été ouvert; handle : \n");
 		for(int i = 0; i < 4; i++)
 		{
 			fileHandle[i] = data_read[1+i];
-			printf("%d ",fileHandle[i]);
+			printf("%.2X ",fileHandle[i]);
 
 		}
 		printf("\n");

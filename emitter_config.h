@@ -33,4 +33,6 @@ FT_STATUS initialize_FTDI(int baudRate, int portNum);
 
 uint8_t set_emitter_config(struct configuration * parametres, parameters config_changes);
 
+uint8_t get_emitter_config(struct configuration * parametres, parameters config_changes);
+
 uint8_t safe_shutdown();

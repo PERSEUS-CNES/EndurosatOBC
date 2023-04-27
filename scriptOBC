@@ -1,0 +1,8 @@
+make -j5 clean
+make -j5
+while (true)
+do
+	./out/obc
+done
+#DEBUG_ON
+
