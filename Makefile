@@ -13,24 +13,23 @@ CC=gcc
 
 ################################################################################
 
-SUBDIR = sbgECom/src sbgECom/src/protocol sbgECom/src/commands sbgECom/src/commands/transfer \
-sbgECom/src/binaryLogs sbgECom/common sbgECom/common/version sbgECom/common/swap \
-sbgECom/common/streamBuffer sbgECom/common/splitBuffer sbgECom/common/platform \
-sbgECom/common/network sbgECom/common/interfaces sbgECom/common/crc 
+SUBDIR = Centrale/sbgECom/src Centrale/sbgECom/src/protocol Centrale/sbgECom/src/commands Centrale/sbgECom/src/commands/transfer \
+Centrale/sbgECom/src/binaryLogs Centrale/sbgECom/common Centrale/sbgECom/common/version Centrale/sbgECom/common/swap \
+Centrale/sbgECom/common/streamBuffer Centrale/sbgECom/common/splitBuffer Centrale/sbgECom/common/platform \
+Centrale/sbgECom/common/network Centrale/sbgECom/common/interfaces Centrale/sbgECom/common/crc
 
 SRC_DIR = .
-SRCS = \
-obc.c \
-ftdi_manager.c\
-storage_manager.c\
-endurosat_manager.c \
-es_crc32.c \
-centrale.c
+OUTILS := FileDeMessage.c EnvoieDataFileMessage.c ReceptionDataFileMessage.c
+FILS   := FilsCentrale.c FilsSauvegarde.c FilsTransmission.c
+STRUCT :=  Structure.c  VariableGlobale.c
+
+SRCS := OBC.c $(OUTILS) $(STRUCT) $(FILS)
 
 SRCS_SBG = \
 $(wildcard **/*.c $(foreach fd, $(SUBDIR), $(fd)/*.c))
 
-INCS_DIR = .
+INCS_DIR = . \
+Librairies
 #$(wildcard **/*.c $(foreach fd, $(SUBDIR), $(fd)/*.c))
 
 LIBS_DIR = . \
@@ -43,16 +42,19 @@ $(TARGET_NAME_SBG)
 ################################################################################
 
 DEPENDENCIES = \
-pthread rt dl
+pthread rt dl 
+
+GCCFLAGS = -g -W -Wall -Wextra #-Wconversion -Werror -mtune=native  -march=native  -std=c99
+
 
 CFLAGS = \
 ${INCS_DIR:%=-I%} \
 $(addprefix -I, $(SUBDIR)) \
--Wall -Wextra
+$(GCCFLAGS)
 
 CFLAGS_SBG = \
 $(addprefix -I, $(SUBDIR)) \
--Wall -Wextra
+$(GCCFLAGS)
 
 LDFLAGS = \
 $(LIBS_DIR:%=-L%)
@@ -87,13 +89,13 @@ $(OBJ_DIR)/%.o: %.c
 
 $(OBJ_DIR) $(TARGET_DIR) $(OBJ_DIR_SBG) $(TARGET_DIR_SBG):
 	mkdir -p $@
-	
+
 #PHONY += echoes
 #echoes:
 #	@echo "SRC files: $(SRCS_SBG)"
 #	@:
 
-all: $(OBJ_DIR) $(OBJ_DIR_SBG) $(TARGET_DIR) $(TARGET_DIR_SBG) $(TARGET_DIR_SBG)/$(TARGET_NAME_SBG) $(TARGET_DIR)/$(TARGET_NAME) 
-	
+all: $(OBJ_DIR) $(OBJ_DIR_SBG) $(TARGET_DIR) $(TARGET_DIR_SBG) $(TARGET_DIR_SBG)/$(TARGET_NAME_SBG) $(TARGET_DIR)/$(TARGET_NAME)
+
 clean:
-	rm -rf $(TARGET_DIR)/* $(OBJ_DIR)/* $(TARGET_DIR_SBG)/* $(OBJ_DIR_SBG)/* 
+	rm -rf $(TARGET_DIR)/* $(OBJ_DIR)/* $(TARGET_DIR_SBG)/* $(OBJ_DIR_SBG)/*

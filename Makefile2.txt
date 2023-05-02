@@ -1,0 +1,88 @@
+
+################################## Flag de compilation ##################################
+CC = gcc
+CFLAGS = -O0 -g -W -Wall -Wextra -Wconversion -Werror -mtune=native  -march=native  -std=c99
+
+CFLAGS_SBG = \
+$(addprefix -I, $(SUBDIR)) \
+$(CFLAGS)
+
+################################## Nom des dossiers ##################################
+
+#Dossier principal
+TARGET_DIR = bin
+
+#Dossier ou sera rangé les objets compilé de la centrale
+OBJ_DIR_SBG = sbgECom/obj
+
+#Dossier ou sera rangé le fichier .a qui est le résultat de toute les compilations des objects
+TARGET_DIR_SBG = sbgECom/out
+
+#Sous dossier ou sont rangé les librairies de la centrale
+SUBDIR = sbgECom/src sbgECom/src/protocol sbgECom/src/commands sbgECom/src/commands/transfer \
+		 sbgECom/src/binaryLogs sbgECom/common sbgECom/common/version sbgECom/common/swap \
+		 sbgECom/common/streamBuffer sbgECom/common/splitBuffer sbgECom/common/platform \
+		 sbgECom/common/network sbgECom/common/interfaces sbgECom/common/crc 
+
+
+CC=gcc
+
+################################## Liste des dépendance du fichier OBC.c ##################################
+
+DEPS_MAIN := $(shell $(CC) -MM OBC.c | sed 's/OBC.o://g')
+
+################################## Liste des fihiers .c de l'OBC ##################################
+OUTILS := FileDeMessage.c EnvoieDataFileMessage.c ReceptionDataFileMessage.c
+FILS   := FilsCentrale.c FilsSauvegarde.c FilsTransmission.c
+STRUCT :=  Structure.c  VariableGlobale.c
+
+SRCS := OBC.c $(OUTILS) $(STRUCT) $(FILS)
+
+
+
+
+################################################################################
+
+all : obc
+
+#Compliation de l'obc
+
+obc : $(SRCS:.c=.o)
+
+
+#Compliation des fichier utilitaire de l'obc
+
+FileDeMessage.o : 
+	$(CC) $(CFLAGS) -c FileDeMessage.c -o $(TARGET_DIR)/FileDeMessage.o
+
+EnvoieDataFileMessage.o : 
+	$(CC) $(CFLAGS) -c EnvoieDataFileMessage.c -o $(TARGET_DIR)/EnvoieDataFileMessage.o
+
+ReceptionDataFileMessage.o : 
+	$(CC) $(CFLAGS) -c ReceptionDataFileMessage.c -o $(TARGET_DIR)/ReceptionDataFileMessage.o
+
+#Compliation des fichiers de structure
+
+Structure.o : 
+	$(CC) $(CFLAGS) -c Structure.c -o $(TARGET_DIR)/Structure.o
+
+VariableGlobale.o : 
+	$(CC) $(CFLAGS) -c VariableGlobale.c -o $(TARGET_DIR)/VariableGlobale.o
+
+#Copmilation des fichiers fils de l'obc
+
+FilsCentrale.o : 
+	$(CC) $(CFLAGS) -c FilsCentrale.c -o $(TARGET_DIR)/FilsCentrale.o
+
+
+FilsSauvegarde.o : 
+	$(CC) $(CFLAGS) -c FilsSauvegarde.c -o $(TARGET_DIR)/FilsSauvegarde.o
+
+
+FilsTransmission.o : 
+	$(CC) $(CFLAGS) -c FilsTransmission.c -o $(TARGET_DIR)/FilsTransmission.o
+
+
+
+clean:
+	rm -f program *.o
