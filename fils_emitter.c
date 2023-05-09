@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "emitter_config.h"
 #include "emitter_reading.h"
@@ -11,6 +12,14 @@
 
 emitter_host_state host_state = emitter_initialisation;
 initialisation_state init_state = ftdi_port;
+
+const uint32_t MAX_DATA_BUFFER_LENGHT = 10000;
+uint8_t * data_buffer;
+uint32_t data_buffer_lenght;
+
+uint8_t emitter_file_name[] = "Log_000000";
+int file_number = 0;
+uint8_t fileHandle[4];
 
 void fils_emitter()
 {
@@ -39,6 +48,7 @@ void fils_emitter()
             param.center_frequency = 2450.0000;
 
             status = set_emitter_config(&param, all_parameters);
+            usleep(5000);
             if(status)
             {
                 init_state = set_transmit_mode;
@@ -50,6 +60,7 @@ void fils_emitter()
             break;
         case set_transmit_mode:
             status = transmit_mode(1);
+            usleep(5000);
             if(status)
             {
                 init_state = init_finished;
@@ -61,9 +72,11 @@ void fils_emitter()
             break;
         case restart_transmit_mode:
             status = transmit_mode(0);
+            usleep(5000);
             init_state = set_transmit_mode;
             break;
         case init_finished:
+            data_buffer = malloc(1);
             host_state = get_obc_data;
             break;
 
@@ -73,24 +86,87 @@ void fils_emitter()
         break;
 
     case get_obc_data:
+        uint8_t * temp_buffer;
+        uint32_t temp_lenght;
+        temp_get_obc_data(&temp_buffer,&temp_lenght);
+        data_buffer_lenght += temp_lenght;
+        data_buffer = realloc(data_buffer,data_buffer_lenght);
+        memcpy(data_buffer + data_buffer_lenght - temp_lenght,temp_buffer,temp_lenght);
+        free(temp_buffer);
+        if(data_buffer_lenght > MAX_DATA_BUFFER_LENGHT)
+        {
+            data_buffer_lenght = 0;
+            free(data_buffer);
+            data_buffer = malloc(1);
+            host_state = delete_files;
+        }
         break;
 
     case creating_file:
+        status = createFile(emitter_file_name,MAX_DATA_BUFFER_LENGHT,fileHandle);
+        if(status)
+        {
+            host_state = writing;
+        }
         break;
     
     case delete_files:
+        status = deleteAllFiles();
+        usleep(5000);
+        if(status)
+        {
+            status = creating_file;
+        }
+        else
+        {
+            host_state = delete_files;
+        }
         break;
     
     case writing:
+        status = writeMultiple(fileHandle,data_buffer,data_buffer_lenght);
+        usleep(5000);
+        if(status)
+        {
+            host_state = sending_file;
+        }
+        else
+        {
+            host_state = delete_files;
+        }
         break;
 
     case sending_file:
+        status = sendFile(emitter_file_name);
+        if(status)
+        {
+            host_state = get_obc_data;
+        }
         break;
 
     case waiting:
         break;
+
+    
     
     default:
         break;
     }
+}
+
+void incr_file_name(uint8_t * file_name, int file_number)
+{
+   
+
+}
+
+void temp_get_obc_data(uint8_t * * data_target, uint32_t * data_lenght)
+{
+    *data_target = malloc(100);
+    for(uint32_t i = 0; i < 100; i++)
+    {
+        *(*data_target + i) = i;
+    }
+    *data_lenght = 100;
+
 }

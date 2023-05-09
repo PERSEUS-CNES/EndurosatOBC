@@ -19,3 +19,7 @@ typedef enum {
 extern emitter_host_state host_state;
 
 void fils_emitter();
+
+void incr_file_name(uint8_t * file_name, int file_number);
+
+void temp_get_obc_data(uint8_t * * data_target, uint32_t * data_lenght);
