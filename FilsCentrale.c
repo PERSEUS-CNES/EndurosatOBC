@@ -11,9 +11,11 @@ Pressure  SBGPressure;
 IMU  SBGIMU;
 GPS_vel  SBGGPS_vel;
 GPS_pos  SBGGPS_pos;
+EKF_nav SBGEKF_nav;
 Magnetometers SBGMagnetometer;
 CLOCK SBGClock;
 unsigned char msg_EKF ;
+unsigned char msg_EKF_nav ;
 unsigned char msg_Pressure;
 unsigned char msg_IMU;
 unsigned char msg_GPS_vel;
@@ -26,6 +28,7 @@ unsigned char msg_Quat;
 //Initialisation des mutex pour éviter les problèmes d'accès simultanés pour envoyer vers l'obc et récupérer les données.
 
 pthread_mutex_t mutex_msg_EKF = PTHREAD_MUTEX_INITIALIZER; 
+pthread_mutex_t mutex_msg_EKF_nav = PTHREAD_MUTEX_INITIALIZER; 
 pthread_mutex_t mutex_msg_Pressure = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_msg_IMU = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_msg_GPS_vel = PTHREAD_MUTEX_INITIALIZER;
@@ -78,6 +81,38 @@ SbgErrorCode onLogReceived(SbgEComHandle *pHandle, SbgEComClass msgClass, SbgECo
     
     msg_EKF = 1;
     pthread_mutex_unlock(&mutex_msg_EKF);
+    
+		break;
+	
+	case SBG_ECOM_LOG_EKF_NAV:
+		//
+		// Simply display euler angles in real time
+		//
+		/*printf("Euler Angles: %3.1f\t%3.1f\t%3.1f\tStd Dev:%3.1f\t%3.1f\t%3.1f   \r", 
+				sbgRadToDegF(pLogData->ekfEulerData.euler[0]), sbgRadToDegF(pLogData->ekfEulerData.euler[1]), sbgRadToDegF(pLogData->ekfEulerData.euler[2]), 
+				sbgRadToDegF(pLogData->ekfEulerData.eulerStdDev[0]), sbgRadToDegF(pLogData->ekfEulerData.eulerStdDev[1]), sbgRadToDegF(pLogData->ekfEulerData.eulerStdDev[2]));*/
+    //
+    // Transfers the data to our own structure so that we can save it later on
+    //
+    pthread_mutex_lock(&mutex_msg_EKF_nav);
+    
+    SBGEKF_nav.position[0] = pLogData->ekfNavData.position[0];
+    SBGEKF_nav.position[1] = pLogData->ekfNavData.position[1];
+    SBGEKF_nav.position[2] = pLogData->ekfNavData.position[2];
+    SBGEKF_nav.positionStdDev[0] = pLogData->ekfNavData.positionStdDev[0];
+    SBGEKF_nav.positionStdDev[1] = pLogData->ekfNavData.positionStdDev[1];
+    SBGEKF_nav.positionStdDev[2] = pLogData->ekfNavData.positionStdDev[2];
+    SBGEKF_nav.velocity[0] = pLogData->ekfNavData.velocity[0];
+	SBGEKF_nav.velocity[1] = pLogData->ekfNavData.velocity[1];
+	SBGEKF_nav.velocity[2] = pLogData->ekfNavData.velocity[2];
+	SBGEKF_nav.velocityStdDev[0] = pLogData->ekfNavData.velocityStdDev[0];
+	SBGEKF_nav.velocityStdDev[1] = pLogData->ekfNavData.velocityStdDev[1];
+	SBGEKF_nav.velocityStdDev[2] = pLogData->ekfNavData.velocityStdDev[2];
+	SBGEKF_nav.undulation = pLogData->ekfNavData.undulation;
+	SBGEKF_nav.timeStamp = pLogData->ekfNavData.timeStamp;
+    
+    msg_EKF_nav = 1;
+    pthread_mutex_unlock(&mutex_msg_EKF_nav);
     
 		break;
    
@@ -497,15 +532,15 @@ unsigned char FilsCentrale(){
 			{
 				fprintf(stderr, "ellipseMinimal: Unable to configure output log SBG_ECOM_LOG_IMU_DATA.\n");
 			}
-			if (sbgEComCmdOutputSetConf(&comHandle, SBG_ECOM_OUTPUT_PORT_A, SBG_ECOM_CLASS_LOG_ECOM_0, SBG_ECOM_LOG_EKF_EULER, SBG_ECOM_OUTPUT_MODE_NEW_DATA) != SBG_NO_ERROR)
+			if (sbgEComCmdOutputSetConf(&comHandle, SBG_ECOM_OUTPUT_PORT_A, SBG_ECOM_CLASS_LOG_ECOM_0, SBG_ECOM_LOG_EKF_EULER, SBG_ECOM_OUTPUT_MODE_MAIN_LOOP ) != SBG_NO_ERROR)
 			{
 				fprintf(stderr, "ellipseMinimal: Unable to configure output log SBG_ECOM_LOG_EKF_EULER.\n");
 			}
-      if (sbgEComCmdOutputSetConf(&comHandle, SBG_ECOM_OUTPUT_PORT_A, SBG_ECOM_CLASS_LOG_ECOM_0, SBG_ECOM_LOG_PRESSURE, SBG_ECOM_OUTPUT_MODE_NEW_DATA) != SBG_NO_ERROR)
+      if (sbgEComCmdOutputSetConf(&comHandle, SBG_ECOM_OUTPUT_PORT_A, SBG_ECOM_CLASS_LOG_ECOM_0, SBG_ECOM_LOG_PRESSURE, SBG_ECOM_OUTPUT_MODE_DIV_2 ) != SBG_NO_ERROR)
 			{
 				fprintf(stderr, "ellipseMinimal: Unable to configure output log SBG_ECOM_LOG_PRESSURE.\n");
 			}
-      if (sbgEComCmdOutputSetConf(&comHandle, SBG_ECOM_OUTPUT_PORT_A, SBG_ECOM_CLASS_LOG_ECOM_0, SBG_ECOM_LOG_MAG, SBG_ECOM_OUTPUT_MODE_NEW_DATA) != SBG_NO_ERROR)
+      if (sbgEComCmdOutputSetConf(&comHandle, SBG_ECOM_OUTPUT_PORT_A, SBG_ECOM_CLASS_LOG_ECOM_0, SBG_ECOM_LOG_MAG, SBG_ECOM_OUTPUT_MODE_DIV_2 ) != SBG_NO_ERROR)
 			{
 				fprintf(stderr, "ellipseMinimal: Unable to configure output log SBG_ECOM_LOG_MAG.\n");
 			}
@@ -517,13 +552,16 @@ unsigned char FilsCentrale(){
 			{
 				fprintf(stderr, "ellipseMinimal: Unable to configure output log SBG_ECOM_LOG_GPS1_VEL.\n");
 			}
+	  if (sbgEComCmdOutputSetConf(&comHandle, SBG_ECOM_OUTPUT_PORT_A, SBG_ECOM_CLASS_LOG_ECOM_0, SBG_ECOM_LOG_EKF_NAV, SBG_ECOM_OUTPUT_MODE_MAIN_LOOP) != SBG_NO_ERROR)
+			{
+				fprintf(stderr, "ellipseMinimal: Unable to configure output log SBG_ECOM_LOG_EKF_NAV.\n");
+			}
 			
 			//
 			// Display a message for real time data display
 			//
 			printf("sbgECom properly Initialized.\n");
 			printf("sbgECom version %s\n\n", SBG_E_COM_VERSION_STR);
-			printf("Euler Angles display with estimated standard deviation.\n");
 
 			//
 			// Define callbacks for received data
@@ -561,7 +599,7 @@ unsigned char FilsCentrale(){
 					//
 					// Release CPU
 					//
-					sbgSleep(1);
+					//sbgSleep(1);
 				}
         else
 				{
@@ -615,35 +653,35 @@ void * envoie_message(){
   while(1){
   if(msg_EKF == 1){
     pthread_mutex_lock(&mutex_msg_EKF);
-    printf("\nmsg EKF Euler Angles: %3.1f\t%3.1f\t%3.1f\tStd Dev:%3.1f\t%3.1f\t%3.1f\t Quaternion: %3.1f\t%3.1f\t%3.1f\t%3.1f\t timestamp : %u\t \n", 
+    /*printf("\nmsg EKF Euler Angles: %3.1f\t%3.1f\t%3.1f\tStd Dev:%3.1f\t%3.1f\t%3.1f\t Quaternion: %3.1f\t%3.1f\t%3.1f\t%3.1f\t timestamp : %u\t \n", 
 				SBG_EKF.euler[0], SBG_EKF.euler[1], SBG_EKF.euler[2], 
 				SBG_EKF.eulerStdDev[0], SBG_EKF.eulerStdDev[1], SBG_EKF.eulerStdDev[2],
         SBG_EKF.quaternion[0],SBG_EKF.quaternion[1],SBG_EKF.quaternion[2],SBG_EKF.quaternion[3],
-        SBG_EKF.timeStamp);
+        SBG_EKF.timeStamp);*/
     Envoie_data_EKF(SBG_EKF, 3,SAUVEGARDE);
     msg_EKF = 0;
     pthread_mutex_unlock(&mutex_msg_EKF);
   }
     if(msg_IMU == 1){
     pthread_mutex_lock(&mutex_msg_IMU);
-    printf("\n msg IMU Acc(m.s^-2): %3.1f\t%3.1f\t%3.1f\tGyroscope(rad.s^-1):%3.1f\t%3.1f\t%3.1f\tTemp(C):%3.1f\tdeltaVelo(m.s^-2):%3.1f\t%3.1f\t%3.1f\tDeltaAngle(rad.s^-1):%3.1f\t%3.1f\t%3.1f\t timestamp: %u\t\n",
-				SBGIMU.accelerometers[0],SBGIMU.accelerometers[1],SBGIMU.accelerometers[2],SBGIMU.gyroscopes[0],SBGIMU.gyroscopes[1],SBGIMU.gyroscopes[2],SBGIMU.temperature,SBGIMU.deltaVelocity[0],SBGIMU.deltaVelocity[1],SBGIMU.deltaVelocity[2],SBGIMU.deltaAngle[0],SBGIMU.deltaAngle[1],SBGIMU.deltaAngle[2],SBGIMU.timeStamp);
+    /*printf("\n msg IMU Acc(m.s^-2): %3.1f\t%3.1f\t%3.1f\tGyroscope(rad.s^-1):%3.1f\t%3.1f\t%3.1f\tTemp(C):%3.1f\tdeltaVelo(m.s^-2):%3.1f\t%3.1f\t%3.1f\tDeltaAngle(rad.s^-1):%3.1f\t%3.1f\t%3.1f\t timestamp: %u\t\n",
+				SBGIMU.accelerometers[0],SBGIMU.accelerometers[1],SBGIMU.accelerometers[2],SBGIMU.gyroscopes[0],SBGIMU.gyroscopes[1],SBGIMU.gyroscopes[2],SBGIMU.temperature,SBGIMU.deltaVelocity[0],SBGIMU.deltaVelocity[1],SBGIMU.deltaVelocity[2],SBGIMU.deltaAngle[0],SBGIMU.deltaAngle[1],SBGIMU.deltaAngle[2],SBGIMU.timeStamp);*/
     Envoie_data_IMU(SBGIMU, 2, SAUVEGARDE);
     msg_IMU = 0;
     pthread_mutex_unlock(&mutex_msg_IMU);
   }
     if(msg_GPS_pos == 1){
     pthread_mutex_lock(&mutex_msg_GPS_pos);
-    printf("\n GPS Pos: longitude %3.1f\t latitude %3.1f\t altitude %3.1f\t undulation %3.1f\t latitudeAccuracy %3.1f\t longitudeAccuracy%3.1f\t altitudeAccuracy%3.1f\t timeStamp %u\t\n", 
-			SBGGPS_pos.longitude, SBGGPS_pos.latitude,SBGGPS_pos.altitude, SBGGPS_pos.undulation, SBGGPS_pos.latitudeAccuracy, SBGGPS_pos.longitudeAccuracy, SBGGPS_pos.altitudeAccuracy,SBGGPS_pos.timeStamp);
+    /*printf("\n GPS Pos: longitude %3.1f\t latitude %3.1f\t altitude %3.1f\t undulation %3.1f\t latitudeAccuracy %3.1f\t longitudeAccuracy%3.1f\t altitudeAccuracy%3.1f\t timeStamp %u\t\n", 
+			SBGGPS_pos.longitude, SBGGPS_pos.latitude,SBGGPS_pos.altitude, SBGGPS_pos.undulation, SBGGPS_pos.latitudeAccuracy, SBGGPS_pos.longitudeAccuracy, SBGGPS_pos.altitudeAccuracy,SBGGPS_pos.timeStamp);*/
     Envoie_data_GPS_pos(SBGGPS_pos, 1, SAUVEGARDE);
     msg_GPS_pos = 0;
     pthread_mutex_unlock(&mutex_msg_GPS_pos);
   }
     if(msg_GPS_vel == 1){
     pthread_mutex_lock(&mutex_msg_GPS_vel);
-    printf("\nGPS Velocity : %3.1f\t %3.1f\t %3.1f\t  Velocity Accuracy : %3.1f\t %3.1f\t %3.1f\t timeStamp : %u \n",
-       SBGGPS_vel.velocity[0], SBGGPS_vel.velocity[1], SBGGPS_vel.velocity[2], SBGGPS_vel.velocityAcc[0],SBGGPS_vel.velocityAcc[1],SBGGPS_vel.velocityAcc[2],SBGGPS_vel.timeStamp );
+    /*printf("\nGPS Velocity : %3.1f\t %3.1f\t %3.1f\t  Velocity Accuracy : %3.1f\t %3.1f\t %3.1f\t timeStamp : %u \n",
+       SBGGPS_vel.velocity[0], SBGGPS_vel.velocity[1], SBGGPS_vel.velocity[2], SBGGPS_vel.velocityAcc[0],SBGGPS_vel.velocityAcc[1],SBGGPS_vel.velocityAcc[2],SBGGPS_vel.timeStamp );*/
     Envoie_data_GPS_vel(SBGGPS_vel, 4, SAUVEGARDE);
     msg_GPS_vel = 0;
     pthread_mutex_unlock(&mutex_msg_GPS_vel);
@@ -651,27 +689,35 @@ void * envoie_message(){
   
   if(msg_Clock == 1){
     pthread_mutex_lock(&mutex_msg_Clock);
-    printf("\n msg Clock Heure : %d:%d:%d:\t Date : %d/%d/%u\n",
-       SBGClock.hour, SBGClock.minute, SBGClock.second, SBGClock.day, SBGClock.month, SBGClock.year);
+   /* printf("\n msg Clock Heure : %d:%d:%d:\t Date : %d/%d/%u\n",
+       SBGClock.hour, SBGClock.minute, SBGClock.second, SBGClock.day, SBGClock.month, SBGClock.year);*/
     Envoie_data_CLOCK(SBGClock, 9, SAUVEGARDE);
     msg_Clock = 0;
     pthread_mutex_unlock(&mutex_msg_Clock);
   }
    if(msg_Pressure == 1){
     pthread_mutex_lock(&mutex_msg_Pressure);
-   printf("\n msg pressure : %3.1f height %3.1f timeStamp %u\n",
-       SBGPressure.pressure, SBGPressure.height, SBGPressure.timeStamp);
+   /*printf("\n msg pressure : %3.1f height %3.1f timeStamp %u\n",
+       SBGPressure.pressure, SBGPressure.height, SBGPressure.timeStamp);*/
     Envoie_data_Pressure(SBGPressure, 5, SAUVEGARDE);
     msg_Pressure = 0;
     pthread_mutex_unlock(&mutex_msg_Pressure);
   }
    if(msg_Magnetometer == 1){
     pthread_mutex_lock(&mutex_msg_Magnetometer);
-   printf("\n msg magnetometers %3.1f\t %3.1f\t %3.1f\t timeStamp %u  \n",
-       SBGMagnetometer.magnetometers[0], SBGMagnetometer.magnetometers[1], SBGMagnetometer.magnetometers[2],SBGMagnetometer.timeStamp);
+   /*printf("\n msg magnetometers %3.1f\t %3.1f\t %3.1f\t timeStamp %u  \n",
+       SBGMagnetometer.magnetometers[0], SBGMagnetometer.magnetometers[1], SBGMagnetometer.magnetometers[2],SBGMagnetometer.timeStamp);*/
     Envoie_data_Magnetometers(SBGMagnetometer, 5, SAUVEGARDE);
     msg_Magnetometer = 0;
     pthread_mutex_unlock(&mutex_msg_Magnetometer);
+  }
+  if(msg_EKF_nav == 1){
+    pthread_mutex_lock(&mutex_msg_EKF_nav);
+   /*printf("\n msg magnetometers %3.1f\t %3.1f\t %3.1f\t timeStamp %u  \n",
+       SBGMagnetometer.magnetometers[0], SBGMagnetometer.magnetometers[1], SBGMagnetometer.magnetometers[2],SBGMagnetometer.timeStamp);*/
+    Envoie_data_EKF_nav(SBGEKF_nav, 1, SAUVEGARDE);
+    msg_EKF_nav = 0;
+    pthread_mutex_unlock(&mutex_msg_EKF_nav);
   }
   }
   exit(EXIT_FAILURE);

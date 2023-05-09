@@ -51,6 +51,23 @@ int Envoie_data_GPS_pos (GPS_pos GPS_pos ,unsigned int priorite , PeripheriqueTy
  */
 int Envoie_data_GPS_vel (GPS_vel GPS_vel , unsigned int priorite , PeripheriqueType peripherique) ;
 
+/** @brief Fonction qui envoie à l'OBC les données de Pression
+ * 
+ * @date 07/03/2023
+ * 
+ * @author Team OBC (ENSSAT)
+ * 
+ * @param EKF_nav -> Adresse de la structure contenant les données de navigation
+ * @param priorite -> Priotité du message
+ * @param peripherique -> Destinationn de l'envoie
+ * 
+ * @return transmition_ok -> Valeur de retour de l'envoi : 
+ *                                                          - -1 -> envoie échoué
+ *                                                          - 0  -> envoie reussi
+ *
+ */
+int Envoie_data_EKF_nav (EKF_nav EKF_nav , unsigned int priorite , PeripheriqueType peripherique) ;
+
 
 /**
  * @brief Fonction qui envoie à l'OBC les données de l'IMU

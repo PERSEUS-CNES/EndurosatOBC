@@ -33,6 +33,7 @@ typedef struct variables_fichiers {
 	FILE * fichier_donnees_pressure;      //Fichier des donnes de pression
 	FILE * fichier_donnees_Magnetometers; //Fichier des donnes du magnetometre
 	FILE * fichier_donnees_EKF;           //Fichier des donnes de l'EKF
+	FILE * fichier_donnees_EKF_nav;		  //Fichier des donnes de navigation
 	FILE * fichier_donnees_CLOCK;         //Fichier des donnes de l'horloge
 } variables_fichiers ;
 typedef variables_fichiers Variables_fichiers;
@@ -56,7 +57,7 @@ typedef struct variables_connexion {
 } variables_connexion ;
 typedef variables_connexion Variables_connexion;
 
-/*! -----------------------------------------------    Les donnes    -----------------------------------------------*/
+/*! -----------------------------------------------    Les donnees    -----------------------------------------------*/
 
 /**
  * @brief Structure qui sotck les donnees du GPS.
@@ -81,6 +82,29 @@ typedef struct gps_pos {
 
 } gps_pos ;
 typedef  gps_pos  GPS_pos;
+
+
+/**
+ * @brief Structure qui sotck les donnees du GPS.
+ * 
+ * @date 04/02/2023
+ * 
+ * @author Team Centrale inertielle & OBC (ENSSAT)
+ *
+ */
+typedef struct ekf_nav {
+		double position[3]     ;
+		float velocity[3]      ;
+		float velocityStdDev[3];
+		
+
+        float undulation       ;         //Altitude difference between the geoid and the Ellipsoid in meters (Height above Ellipsoid = altitude + undulation)
+        float positionStdDev[3] ;         //1 sigma latitude accuracy in meters	
+		unsigned int timeStamp ;         //Temps depuis la mise en focntion de la centrale en micro seconde
+
+
+} ekf_nav ;
+typedef  ekf_nav  EKF_nav;
 
 /**
  * @brief Structure qui sotck les donnees de vélocité du GPS.
@@ -242,6 +266,7 @@ typedef enum {
 	MAGNETOMETERS_TYPE,
 	PRESSURE_TYPE,
 	EKF_TYPE,
+	EKF_NAV_TYPE,
 	CLOCK_TYPE
 } MessageType;
 
@@ -261,6 +286,7 @@ typedef struct {
 		Magnetometers magnetometers ;   // Données du magnétomètre
 		Pressure pressure; 				// Données de pression
 		EKF ekf ; 						// Données de l'EKF
+		EKF_nav ekf_nav;					// Données de navigation
 		CLOCK clock ;					// Données de l'horloge
     } data;
 } Message;

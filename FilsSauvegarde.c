@@ -42,6 +42,7 @@ void open_files(Variables_fichiers * file_struct,char* mode){
 	file_struct->fichier_donnees_Magnetometers=fopen("./Data/fichier_Magnetometers.txt",mode);
 	file_struct->fichier_donnees_pressure=fopen("./Data/fichier_pression.txt",mode);
 	file_struct->fichier_donnees_EKF=fopen("./Data/fichier_EKF.txt",mode);
+	file_struct->fichier_donnees_EKF_nav=fopen("./Data/fichier_EKF_nav.txt",mode);
 	file_struct->fichier_donnees_CLOCK=fopen("./Data/fichier_CLOCK.txt",mode);
 
 	/* teste si les fichiers ont bien été ouvert */
@@ -70,11 +71,18 @@ void open_files(Variables_fichiers * file_struct,char* mode){
 		file_struct->file_open[EKF_TYPE]=true;
 		file_struct->compteur_fichiers+=1;
 	}
+	
+		if (file_struct->fichier_donnees_EKF_nav!=NULL){
+		file_struct->file_open[EKF_NAV_TYPE]=true;
+		file_struct->compteur_fichiers+=1;
+	}
+
 
 	if (file_struct->fichier_donnees_CLOCK!=NULL){
 		file_struct->file_open[CLOCK_TYPE]=true;
 		file_struct->compteur_fichiers+=1;
 	}
+	
 
 	if(debug){printf("open\n %d fichier(s) ouvert(s)\n",file_struct->compteur_fichiers);}
 }
@@ -126,6 +134,12 @@ void close_files(Variables_fichiers *file_struct){
 	if(file_struct->file_open[EKF_TYPE]){
 		file_struct->file_open[EKF_TYPE]=false;
 		fclose(file_struct->fichier_donnees_EKF);
+		file_struct->compteur_fichiers-=1;
+	}
+	
+	if(file_struct->file_open[EKF_NAV_TYPE]){
+		file_struct->file_open[EKF_NAV_TYPE]=false;
+		fclose(file_struct->fichier_donnees_EKF_nav);
 		file_struct->compteur_fichiers-=1;
 	}
 
@@ -211,6 +225,11 @@ FILE* ID2file(Variables_fichiers *file_struct,MessageType id){
 				return file_struct->fichier_donnees_EKF;
 			}
 			break;
+		case EKF_NAV_TYPE:
+			if(file_struct->file_open[EKF_NAV_TYPE]){
+				return file_struct->fichier_donnees_EKF_nav;
+			}
+			break;
 		case CLOCK_TYPE :
 			if(file_struct->file_open[CLOCK_TYPE]){
 				return file_struct->fichier_donnees_CLOCK;
@@ -258,7 +277,7 @@ void save(FILE* file,MessageType id,Message message){
 			fprintf(file,"%f",gps_pos.altitudeAccuracy);
 			fprintf(file,";");
 
-			fprintf(file,";%d",gps_pos.timeStamp);
+			fprintf(file,";%u",gps_pos.timeStamp);
 
 			break;
 
@@ -342,24 +361,73 @@ void save(FILE* file,MessageType id,Message message){
 			fprintf(file,"%lf",ekf.quaternion[2]);
 			fprintf(file,";");
 
-			fprintf(file,"%d",ekf.timeStamp);
+			fprintf(file,"%u",ekf.timeStamp);
 			fprintf(file,";");
 			
 
 			//fwrite(&ekf, sizeof(EKF), 1, file);
 
 			break;
+			
+		case EKF_NAV_TYPE: ;
+			EKF_nav ekf_nav =message.data.ekf_nav;
 
+			
+			fprintf(file,"%f",ekf_nav.position[0]);
+			fprintf(file,";");
+			fprintf(file,"%f",ekf_nav.position[1]);
+			fprintf(file,";");
+			fprintf(file,"%f",ekf_nav.position[2]);
+			fprintf(file,";");
+
+		fprintf(file,"%f",ekf_nav.positionStdDev[0]);
+			fprintf(file,";");
+			fprintf(file,"%f",ekf_nav.positionStdDev[1]);
+			fprintf(file,";");
+			fprintf(file,"%f",ekf_nav.positionStdDev[2]);
+			fprintf(file,";");
+
+
+			fprintf(file,"%f",ekf_nav.velocity[0]);
+			fprintf(file,";");
+			fprintf(file,"%f",ekf_nav.velocity[1]);
+			fprintf(file,";");
+			fprintf(file,"%f",ekf_nav.velocity[2]);
+			fprintf(file,";");
+			
+			fprintf(file,"%f",ekf_nav.velocityStdDev[0]);
+			fprintf(file,";");
+			fprintf(file,"%f",ekf_nav.velocityStdDev[1]);
+			fprintf(file,";");
+			fprintf(file,"%f",ekf_nav.velocityStdDev[2]);
+			fprintf(file,";");
+			
+			fprintf(file,"%f",ekf_nav.undulation);
+			fprintf(file,";");
+			
+			fprintf(file,"%u",ekf_nav.timeStamp);
+			fprintf(file,";");
+			
+
+
+			break;
+			
 		case CLOCK_TYPE : ;
 			CLOCK clock = message.data.clock;
-
-			fprintf(file,"%d",clock.year);
-			fprintf(file,"%d",clock.month);
-			fprintf(file,"%d",clock.day);
-			fprintf(file,"%d",clock.hour);
-			fprintf(file,"%d",clock.minute);
-			fprintf(file,"%d",clock.second);
-			fprintf(file,"%d",clock.nanoSecond);
+			fprintf(file,"/");
+			fprintf(file,"%u",clock.day);	
+			fprintf(file,"/");
+			fprintf(file,"%u",clock.month);
+			fprintf(file,"/");
+			fprintf(file,"%u",clock.year);
+			fprintf(file,"/");
+			fprintf(file,"%u",clock.hour);
+			fprintf(file,":");
+			fprintf(file,"%u",clock.minute);
+			fprintf(file,":");
+			fprintf(file,"%u",clock.second);
+			fprintf(file,":");
+			fprintf(file,"%u",clock.nanoSecond);
 
 			//ToString_data_CLOCK(clock);
 
@@ -408,14 +476,14 @@ void FilsSauvegarde(){
 	int since_update=0;
 	
 	open_files(&VariablesFichiers,"a");
-	printf("size of message = %ld \n",sizeof(Message));
+	//printf("size of message = %ld \n",sizeof(Message));
 	if(debug){printf("compteur_fichier:%d\n",VariablesFichiers.compteur_fichiers);}
 	while(1){
 		Message  * data = malloc(sizeof(Message));
-		printf("\n data récupérée par sauvegarde");
+		//printf("\n data récupérée par sauvegarde");
 		*data = receptionSauvegarde() ;
 	
-		printf("Message reçu par sauvegarde : type = %d\n" , data->type);
+		//printf("Message reçu par sauvegarde : type = %d\n" , data->type);
 
 		store_data(&VariablesFichiers,*data,&since_update);
 		free(data);

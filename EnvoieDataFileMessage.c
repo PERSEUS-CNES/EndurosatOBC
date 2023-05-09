@@ -52,7 +52,7 @@ int Envoie_data_GPS_pos (GPS_pos GPS_pos ,unsigned int priorite , PeripheriqueTy
         break;
     }
 
-    printf("Envoie GPS_pos fini !\n");
+    //printf("Envoie GPS_pos fini !\n");
 
     return transmition_ok ;
 
@@ -102,7 +102,7 @@ int Envoie_data_GPS_vel (GPS_vel GPS_vel , unsigned int priorite , PeripheriqueT
             break;
     }
                     
-    printf("Envoie GPS_vel fini !\n");
+    //printf("Envoie GPS_vel fini !\n");
 
     return transmition_ok ;
 
@@ -152,7 +152,7 @@ int Envoie_data_IMU (IMU IMU , unsigned int priorite , PeripheriqueType peripher
             break;
     }    
 
-    printf("Envoie IMU fini !\n");
+    //printf("Envoie IMU fini !\n");
 
     return transmition_ok ;
 }
@@ -201,7 +201,7 @@ int Envoie_data_Magnetometers (Magnetometers Magnetometers , unsigned int priori
             break;
     }
 
-    printf("Envoie Magnetometre fini !\n");
+    //printf("Envoie Magnetometre fini !\n");
 
     return transmition_ok ;
 
@@ -250,12 +250,60 @@ int Envoie_data_Pressure (Pressure Pressure , unsigned int priorite , Peripheriq
             break;
     }        
 
-    printf("Envoie Pression fini !\n");
+    //printf("Envoie Pression fini !\n");
 
     return transmition_ok ;
 
 }
 
+
+/** @brief Fonction qui envoie à l'OBC les données de EKF_nav
+ * 
+ * @date 07/03/2023
+ * 
+ * @author Team OBC (ENSSAT)
+ * 
+ * @param EKF_nav -> Adresse de la structure contenant les données de navigation
+ * @param priorite -> Priotité du message
+ * @param peripherique -> Destinationn de l'envoie
+ * 
+ * @return transmition_ok -> Valeur de retour de l'envoi : 
+ *                                                          - -1 -> envoie échoué
+ *                                                          - 0  -> envoie reussi
+ *
+ */
+int Envoie_data_EKF_nav (EKF_nav nav , unsigned int priorite , PeripheriqueType peripherique) {
+    
+    int transmition_ok ;
+
+    Message message;
+
+    message.type = EKF_NAV_TYPE;
+    message.data.ekf_nav = nav ;
+
+    switch (peripherique)
+        {
+        case CENTRALE :
+            transmition_ok = mq_send (FileDeMessage.file_message_Centrale, (const char*)&message, sizeof(Message) , priorite);
+            break;
+
+        case EMETTEUR :
+            transmition_ok = mq_send (FileDeMessage.file_message_Emetteur, (const char*)&message, sizeof(Message) , priorite);
+            break;
+
+        case SAUVEGARDE :
+            transmition_ok = mq_send (FileDeMessage.file_message_Sauvegarde, (const char*)&message, sizeof(Message) , priorite);
+            break;
+
+        default:
+            break;
+    }        
+
+    //printf("Envoie Pression fini !\n");
+
+    return transmition_ok ;
+
+}
  /** @brief Fonction qui envoie à l'OBC les données de l'EKF
  * 
  * @date 07/03/2023
@@ -297,7 +345,7 @@ int Envoie_data_EKF (EKF EKF , unsigned int priorite , PeripheriqueType peripher
             break;
     }    
 
-    printf("Envoie EKF fini !\n");
+    //printf("Envoie EKF fini !\n");
 
     return transmition_ok ;
 
@@ -345,7 +393,7 @@ int Envoie_data_CLOCK (CLOCK CLOCK ,unsigned int priorite , PeripheriqueType per
         break;
     }
 
-    printf("Envoie CLOCK fini !\n");
+    //printf("Envoie CLOCK fini !\n");
 
     return transmition_ok ;
 
