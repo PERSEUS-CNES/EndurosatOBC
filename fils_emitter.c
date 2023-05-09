@@ -17,9 +17,16 @@ const uint32_t MAX_DATA_BUFFER_LENGHT = 10000;
 uint8_t * data_buffer;
 uint32_t data_buffer_lenght;
 
-uint8_t emitter_file_name[] = "Log_000000";
+uint8_t emitter_file_name[] = "Log_000000.txt";
 int file_number = 0;
 uint8_t fileHandle[4];
+
+int port = 0;
+int baud = 3000000;
+FT_STATUS status_ft;
+struct configuration param;
+uint8_t * temp_buffer;
+uint32_t temp_lenght;
 
 void fils_emitter()
 {
@@ -30,14 +37,13 @@ void fils_emitter()
         switch (init_state)
         {
         case ftdi_port:
-            int port = 0;
-            int baud = 3000000;
-            FT_STATUS status_ft = initialize_FTDI(baud, port); 
+            
+            status_ft = initialize_FTDI(baud, port); 
 
             init_state = set_parameters; 
             break;
         case set_parameters:
-            struct configuration param;
+            
             param.symbol_rate = 5;
             param.transmit_power = 27; 
             param.MODCOD = 1;
@@ -76,8 +82,7 @@ void fils_emitter()
             init_state = set_transmit_mode;
             break;
         case init_finished:
-            data_buffer = malloc(1);
-            host_state = get_obc_data;
+            host_state = initialise_data_buffer;
             break;
 
         default:
@@ -85,9 +90,15 @@ void fils_emitter()
         }
         break;
 
+    case initialise_data_buffer:
+        data_buffer_lenght = 0;
+        free(data_buffer);
+        data_buffer = malloc(1);
+
+        host_state = get_obc_data;
+        break;
     case get_obc_data:
-        uint8_t * temp_buffer;
-        uint32_t temp_lenght;
+        
         temp_get_obc_data(&temp_buffer,&temp_lenght);
         data_buffer_lenght += temp_lenght;
         data_buffer = realloc(data_buffer,data_buffer_lenght);
@@ -95,9 +106,7 @@ void fils_emitter()
         free(temp_buffer);
         if(data_buffer_lenght > MAX_DATA_BUFFER_LENGHT)
         {
-            data_buffer_lenght = 0;
-            free(data_buffer);
-            data_buffer = malloc(1);
+            
             host_state = delete_files;
         }
         break;
@@ -115,7 +124,7 @@ void fils_emitter()
         usleep(5000);
         if(status)
         {
-            status = creating_file;
+            host_state = creating_file;
         }
         else
         {
@@ -138,6 +147,7 @@ void fils_emitter()
 
     case sending_file:
         status = sendFile(emitter_file_name);
+        usleep(5000);
         if(status)
         {
             host_state = get_obc_data;

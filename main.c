@@ -13,6 +13,8 @@
 #include "emitter_sending.h"
 #include "emitter_writing.h"
 
+#include "fils_emitter.h"
+
 uint8_t debug = 0;
 
 //ce programme a pour but de tester la configuration et le passage au mode "transmit" de l'emetteur
@@ -24,8 +26,13 @@ int main(int argc, char * argv[])
         if(!strcmp(argv[1],"DEBUG_ON"))
         debug = 1;
     }
+
+    while(1)
+    {
+        fils_emitter();
+    }
     // initialisation du port FTDI
-    int port = 0;
+    /*int port = 0;
     int baud = 3000000;
     uint8_t status = 0;//boolen
     uint32_t wait = 5000;
@@ -105,7 +112,7 @@ int main(int argc, char * argv[])
 	// usleep(10000000); // delai de 10 secondes pour pouvoir observer la réponse
 	}   
 	
-    status = transmit_mode(0); // extinction de l'emetteur 
+    status = transmit_mode(0); // extinction de l'emetteur */
 
     return 0;
 }

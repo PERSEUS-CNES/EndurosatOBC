@@ -5,7 +5,8 @@ typedef enum {
     writing, 
     sending_file, 
     waiting, 
-    get_obc_data 
+    get_obc_data,
+    initialise_data_buffer //
 }emitter_host_state;
 
 typedef enum {
