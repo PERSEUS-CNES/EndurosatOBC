@@ -18,6 +18,7 @@ emitter_config.c \
 emitter_writing.c \
 emitter_reading.c \
 emitter_sending.c \
+fils_emitter.c\
 es_crc32.c 
 
 
