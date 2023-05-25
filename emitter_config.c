@@ -3,8 +3,12 @@
 #include <string.h>
 #include "emitter_config.h"
 #include "emitter_commands.h"
+#include "import_ftdi_lib.h"
+#include "import_ftdi_func_extern.h"
 
-FT_HANDLE  ftHandle = NULL;
+
+extern FT_HANDLE ftHandle;
+
 uint8_t set_emitter_config(struct configuration * parametres,  parameters config_changes) 
 {
 	uint32_t header = EMITTER_HEADER;//0x45 53 55 50;
@@ -192,8 +196,8 @@ FT_STATUS initialize_FTDI(int baudRate, int portNum)
 	}	
 	
 	printf("Trying FTDI device %d at %d baud.\n", portNum, baudRate);
-	
-	ftStatus = FT_Open(portNum, &ftHandle);
+	ftStatus = ftOpen(portNum, &ftHandle);
+	//ftStatus = ftOpenEx("FT5RIYMI",FT_OPEN_BY_SERIAL_NUMBER,&ftHandle);
 	if (ftStatus != FT_OK) 
 	{
 		printf("FT_Open(%d) failed, with error %d.\n", portNum, (int)ftStatus);
@@ -201,17 +205,18 @@ FT_STATUS initialize_FTDI(int baudRate, int portNum)
 		printf("If so, unload them using rmmod, as they conflict with ftd2xx.\n");
 		goto exit;
 	}
-
+	
 	assert(ftHandle != NULL);
-
-	ftStatus = FT_ResetDevice(ftHandle);
+	printf("0\n");
+	ftStatus = ftResetDevice(ftHandle);
 	if (ftStatus != FT_OK) 
 	{
 		printf("Failure.  FT_ResetDevice returned %d.\n", (int)ftStatus);
 		goto exit;
 	}
-	
-	ftStatus = FT_SetBaudRate(ftHandle, (ULONG)baudRate);
+	printf("1\n");
+	ftStatus = ftSetBaudRate(ftHandle, (ULONG)baudRate);
+	printf("2\n");
 	if (ftStatus != FT_OK) 
 	{
 		printf("Failure.  FT_SetBaudRate(%d) returned %d.\n", 
@@ -220,10 +225,11 @@ FT_STATUS initialize_FTDI(int baudRate, int portNum)
 		goto exit;
 	}
 	// Paquets de 8 bits, 1 Stop bit , Pas de parit�
-	ftStatus = FT_SetDataCharacteristics(ftHandle, 
+	ftStatus = ftSetDataCharacteristics(ftHandle, 
 	                                     FT_BITS_8,
 	                                     FT_STOP_BITS_1,
 	                                     FT_PARITY_NONE);
+	printf("3\n");
 	if (ftStatus != FT_OK) 
 	{
 		printf("Failure.  FT_SetDataCharacteristics returned %d.\n", (int)ftStatus);
@@ -231,7 +237,8 @@ FT_STATUS initialize_FTDI(int baudRate, int portNum)
 	}
 	                          
 	// Indicate our presence to remote computer
-	ftStatus = FT_SetDtr(ftHandle);
+	ftStatus = ftSetDtr(ftHandle);
+	printf("4\n");
 	if (ftStatus != FT_OK) 
 	{
 		printf("Failure.  FT_SetDtr returned %d.\n", (int)ftStatus);
@@ -239,7 +246,8 @@ FT_STATUS initialize_FTDI(int baudRate, int portNum)
 	}
 
 	// Flow control is needed for higher baud rates
-	ftStatus = FT_SetFlowControl(ftHandle, FT_FLOW_NONE, 0, 0);
+	ftStatus = ftSetFlowControl(ftHandle, FT_FLOW_NONE, 0, 0);
+	printf("5\n");
 	if (ftStatus != FT_OK) 
 	{
 		printf("Failure.  FT_SetFlowControl returned %d.\n", (int)ftStatus);
@@ -256,7 +264,8 @@ FT_STATUS initialize_FTDI(int baudRate, int portNum)
 	}*/
 
 	
-	ftStatus = FT_SetTimeouts(ftHandle, 0, 0);	// 3 seconds
+	ftStatus = ftSetTimeouts(ftHandle, 0, 0);	// 3 seconds
+	printf("6\n");
 	if (ftStatus != FT_OK) 
 	{
 		printf("Failure.  FT_SetTimeouts returned %d\n", (int)ftStatus);

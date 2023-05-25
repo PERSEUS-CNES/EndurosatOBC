@@ -15,7 +15,7 @@
 #define MILLI_IN_MICRO 				1000
 
 extern uint8_t debug;
-extern FT_HANDLE  ftHandle;
+//FT_HANDLE  ftHandle;// = NULL;
 
 void purgeBuffer();
 void lenghtQueue(DWORD* RxBytes);

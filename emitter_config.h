@@ -5,7 +5,6 @@
 
 extern uint8_t debug;
 
-extern FT_HANDLE  ftHandle;
 
 typedef enum  {all_parameters,
                         parm_symbol_rate, 

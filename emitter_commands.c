@@ -5,11 +5,16 @@
 #include "ftd2xx.h"
 #include "emitter_commands.h"
 #include "emitter_config.h"
+#include "import_ftdi_lib.h"
+#include "import_ftdi_func_extern.h"
+
+extern FT_HANDLE ftHandle;
+
 
 void purgeBuffer()
 {
 	int ftStatus = FT_OK;
-	ftStatus = FT_Purge(ftHandle, FT_PURGE_RX | FT_PURGE_TX); // Purge both Rx and Tx buffers
+	ftStatus = ftPurge(ftHandle, FT_PURGE_RX | FT_PURGE_TX); // Purge both Rx and Tx buffers
 	if(ftStatus == FT_OK)
 	{
 		printf("FT_Purge OK\n");
@@ -28,7 +33,7 @@ void lenghtQueue(DWORD* RxBytes)
 	*RxBytes=0;	
 	while(count > 0)
 	{	
-		FT_GetQueueStatus(ftHandle,RxBytes);
+		ftGetQueueStatus(ftHandle,RxBytes);
 		//printf("\n Queue status 22 : %i\n", *RxBytes);
 		if(*RxBytes !=0 && *RxBytes%16 == 0)
 		{
@@ -163,10 +168,12 @@ uint8_t send_command_request(uint32_t command_size,
 		purgeBuffer();
 	
 		// envoie la commande via l'adaptateur RS485
-		ftStatus = FT_Write(ftHandle, 
+		printf("1\n");
+		ftStatus = ftWrite(ftHandle, 
 	            	        command_buffer,
 	        	            bytesToWrite, 
 	    	                &bytesWritten);
+		printf("2\n");
  
 		if (ftStatus != FT_OK) // vérifie que le module RS485 a bien envoyé la commande
 		{
@@ -235,7 +242,7 @@ uint8_t send_command_request(uint32_t command_size,
 			}
 		
 			if(RxBytes)
-				ftStatus = 	FT_Read(ftHandle,RxBuffer,RxBytes,&BytesReceived); // lis la réponse de l'emetteur
+				ftStatus = 	ftRead(ftHandle,RxBuffer,RxBytes,&BytesReceived); // lis la réponse de l'emetteur
 			if (RxBytes && ftStatus == FT_OK) { // si la réception à fonctionnée
 				if (BytesReceived == RxBytes) { // si tous les bytes ont été lus
 					// FT_Read OK
@@ -370,7 +377,7 @@ uint8_t send_GetResult_request(uint32_t command_size,
 
 		purgeBuffer();
 		bytesToWrite=command_size;
-		ftStatus = FT_Write(ftHandle, // envoie la requete via le module RS485
+		ftStatus = ftWrite(ftHandle, // envoie la requete via le module RS485
 								command_buffer,
 								bytesToWrite, 
 								&bytesWritten);
@@ -409,7 +416,7 @@ uint8_t send_GetResult_request(uint32_t command_size,
 
 		if (RxBytes) { // si une réponse est envoyée via le module par l'emetteur
 	
-			ftStatus = FT_Read(ftHandle,RxBuffer,RxBytes,&BytesReceived);// récupère la réponse
+			ftStatus = ftRead(ftHandle,RxBuffer,RxBytes,&BytesReceived);// récupère la réponse
 			if (ftStatus == FT_OK) {
 				if (BytesReceived == RxBytes) {
 					// FT_Read OK
