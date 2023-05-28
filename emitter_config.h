@@ -1,10 +1,12 @@
 #include <stdint.h>
 #include <stdlib.h>
-#include "ftd2xx.h"
 
+#include "ftdi.h"
 
 extern uint8_t debug;
 
+extern struct ftdi_context *ftdiContext;
+//extern FT_HANDLE  ftHandle;
 
 typedef enum  {all_parameters,
                         parm_symbol_rate, 
@@ -28,7 +30,7 @@ struct configuration {
     float center_frequency;
 };
 
-FT_STATUS initialize_FTDI(int baudRate, int portNum);
+uint8_t initialize_FTDI(int baudRate, int portNum);
 
 uint8_t set_emitter_config(struct configuration * parametres, parameters config_changes);
 

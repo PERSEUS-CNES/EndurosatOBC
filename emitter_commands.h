@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <assert.h>
-#include "ftd2xx.h"
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include "ftdi.h"
 
 #define EMITTER_ID 0x2006 // id de l'emetteur
 #define EMITTER_HEADER 0x50555345 // header des commandes 0x45535550
@@ -15,12 +15,10 @@
 #define MILLI_IN_MICRO 				1000
 
 extern uint8_t debug;
-//FT_HANDLE  ftHandle;// = NULL;
+extern struct ftdi_context *ftdiContext;
+//extern FT_HANDLE  ftHandle;
 
 void purgeBuffer();
-void lenghtQueue(DWORD* RxBytes);
-
-void byteFlip(uint16_t * two_byte_int);
 
 //lis la partie data du buffer de réponse envoyé par l'emetteur lors d'une requete 'Get Result'
 void readData(uint8_t buffer[], uint8_t * data_target);

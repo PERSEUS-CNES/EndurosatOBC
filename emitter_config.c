@@ -3,11 +3,9 @@
 #include <string.h>
 #include "emitter_config.h"
 #include "emitter_commands.h"
-#include "import_ftdi_lib.h"
-#include "import_ftdi_func_extern.h"
+#include "ftdi.h"
 
-
-extern FT_HANDLE ftHandle;
+struct ftdi_context *ftdiContext;
 
 uint8_t set_emitter_config(struct configuration * parametres,  parameters config_changes) 
 {
@@ -187,70 +185,76 @@ uint8_t get_emitter_config(struct configuration * parametres,  parameters config
     return 1;
 }
 
-FT_STATUS initialize_FTDI(int baudRate, int portNum)
+uint8_t initialize_FTDI(int baudRate, int portNum)
 {
-	FT_STATUS  ftStatus = FT_OK;
+
+	int ftdi_status = 0;
 	if (baudRate < 0)
 	{
 		baudRate = 3000000;
 	}	
 	
 	printf("Trying FTDI device %d at %d baud.\n", portNum, baudRate);
-	ftStatus = ftOpen(portNum, &ftHandle);
-	//ftStatus = ftOpenEx("FT5RIYMI",FT_OPEN_BY_SERIAL_NUMBER,&ftHandle);
+	
+	/*ftStatus = FT_Open(portNum, &ftHandle);
 	if (ftStatus != FT_OK) 
 	{
 		printf("FT_Open(%d) failed, with error %d.\n", portNum, (int)ftStatus);
 		printf("Use lsmod to check if ftdi_sio (and usbserial) are present.\n");
 		printf("If so, unload them using rmmod, as they conflict with ftd2xx.\n");
 		goto exit;
+	}*/
+
+	ftdiContext = ftdi_new();
+
+	assert(ftdiContext != NULL);
+	char desc[10];
+	//ftdi_status = ftdi_usb_open(ftdiContext, 0x0403, 0x6001);
+	ftdi_status = ftdi_usb_open_desc(ftdiContext,0x0403,0x6001,"USB-RS485 Cable","FT5RIYMI");
+	if(ftdi_status < 0)
+	{
+		printf("Device was not oppened (%s)\n", ftdi_get_error_string(ftdiContext));
+		goto exit;
+	}
+	ftdi_status = ftdi_usb_reset(ftdiContext);
+	if (ftdi_status < 0) 
+	{
+		printf("reset device failure (%s)\n", ftdi_get_error_string(ftdiContext));
+		goto exit;
 	}
 	
-	assert(ftHandle != NULL);
-	printf("0\n");
-	ftStatus = ftResetDevice(ftHandle);
-	if (ftStatus != FT_OK) 
+	ftdi_status = ftdi_set_baudrate(ftdiContext, baudRate);
+	if (ftdi_status < 0) 
 	{
-		printf("Failure.  FT_ResetDevice returned %d.\n", (int)ftStatus);
+		printf("error setting baud rate %d (%s)\n",baudRate, ftdi_get_error_string(ftdiContext));
 		goto exit;
 	}
-	printf("1\n");
-	ftStatus = ftSetBaudRate(ftHandle, (ULONG)baudRate);
-	printf("2\n");
-	if (ftStatus != FT_OK) 
-	{
-		printf("Failure.  FT_SetBaudRate(%d) returned %d.\n", 
-		       baudRate,
-		       (int)ftStatus);
-		goto exit;
-	}
+
+	ftdi_status = ftdi_set_line_property(ftdiContext,BITS_8,STOP_BIT_1,NONE);
 	// Paquets de 8 bits, 1 Stop bit , Pas de parit�
-	ftStatus = ftSetDataCharacteristics(ftHandle, 
-	                                     FT_BITS_8,
-	                                     FT_STOP_BITS_1,
-	                                     FT_PARITY_NONE);
-	printf("3\n");
-	if (ftStatus != FT_OK) 
+	//ftStatus = FT_SetDataCharacteristics(ftHandle, 
+	//                                     FT_BITS_8,
+	//                                     FT_STOP_BITS_1,
+	//                                     FT_PARITY_NONE);
+	if (ftdi_status < 0) 
 	{
-		printf("Failure.  FT_SetDataCharacteristics returned %d.\n", (int)ftStatus);
+		printf("set line property failure (%s)\n", ftdi_get_error_string(ftdiContext));
 		goto exit;
 	}
 	                          
 	// Indicate our presence to remote computer
-	ftStatus = ftSetDtr(ftHandle);
-	printf("4\n");
-	if (ftStatus != FT_OK) 
+	ftdi_status = ftdi_setdtr(ftdiContext,1);
+	if (ftdi_status < 0) 
 	{
-		printf("Failure.  FT_SetDtr returned %d.\n", (int)ftStatus);
+		printf("set dtr failure (%s)\n", ftdi_get_error_string(ftdiContext));
 		goto exit;
 	}
 
 	// Flow control is needed for higher baud rates
-	ftStatus = ftSetFlowControl(ftHandle, FT_FLOW_NONE, 0, 0);
-	printf("5\n");
-	if (ftStatus != FT_OK) 
+	ftdi_status = ftdi_setflowctrl(ftdiContext,SIO_DISABLE_FLOW_CTRL);
+	if (ftdi_status < 0) 
 	{
-		printf("Failure.  FT_SetFlowControl returned %d.\n", (int)ftStatus);
+		printf("set flow control failure (%s)\n", ftdi_get_error_string(ftdiContext));
 		goto exit;
 	}
 
@@ -264,16 +268,16 @@ FT_STATUS initialize_FTDI(int baudRate, int portNum)
 	}*/
 
 	
-	ftStatus = ftSetTimeouts(ftHandle, 0, 0);	// 3 seconds
-	printf("6\n");
-	if (ftStatus != FT_OK) 
+	//ftStatus = FT_SetTimeouts(ftHandle, 0, 0);	// 3 seconds
+	ftdi_status = ftdi_set_latency_timer(ftdiContext,3);
+	if (ftdi_status < 0) 
 	{
-		printf("Failure.  FT_SetTimeouts returned %d\n", (int)ftStatus);
+		printf("set latency timer failure (%s)\n", ftdi_get_error_string(ftdiContext));
 		goto exit;
 	}
 	
 	exit:
-		return ftStatus;
+		return ftdi_status;
 }
 
 
