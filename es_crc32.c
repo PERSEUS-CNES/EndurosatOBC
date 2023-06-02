@@ -124,11 +124,11 @@ unsigned int crc32(unsigned int crc, unsigned char *buf, unsigned int size)
 	
 	crc = ~crc;
 	
-	for(int i = 0; i < size ; i++){
+	/*for(int i = 0; i < size ; i++){
 		printf("%.2X",buf[i]);
 	}
 	
-	printf("\n");
+	printf("\n");*/
 		
 	while (size--)
 		crc = crc32_tab[ (unsigned char)crc ^ *p++ ] ^ (crc >> 8);

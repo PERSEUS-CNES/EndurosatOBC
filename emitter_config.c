@@ -3,6 +3,7 @@
 #include <string.h>
 #include "emitter_config.h"
 #include "emitter_commands.h"
+#include "debug.h"
 #include "ftdi.h"
 
 struct ftdi_context *ftdiContext;
@@ -96,38 +97,47 @@ uint8_t set_emitter_config(struct configuration * parametres,  parameters config
 	}
 	
 	
-
+	#ifdef DEBUG_FUNC
 	printf("configuration\n");
+	#endif
     status = send_command_request(comm_lenght,header,id,data_lenght,command_status,command,type,data);
     free(data);
 	if(!status)
         return 0;
 
     //usleep(10000);
-    
+    #ifdef DEBUG_FUNC
     printf("commande de configuration  à  marchée\n");
+	#endif
 	data_lenght = 0x0002;
     uint8_t data_get[2];
     memcpy(data_get, &type,sizeof(uint8_t)*data_lenght);
     type = command;//command;
     command = 0x0114;
     comm_lenght = 32;
+	#ifdef DEBUG_FUNC
     printf("send getResult pour la configuration \n");
+	#endif
     status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_get,lecture);    
   
     if(!status)
         return 0;
-        
+    #ifdef DEBUG_FUNC
     printf("send getResult  à  marché\n");
 	printf("config result %d\n",(int)lecture[0]);
+	#endif
 	if(lecture[0] == 0x00)
 	{
+		#ifdef DEBUG_FUNC
 		printf("configuration acceptée\n");
+		#endif
 		
 	}
 	else
-	{
+	{	
+		#ifdef DEBUG_FUNC
 		printf("echec dans la configuration\n");
+		#endif
 		return 0;
 	}
     return 1;
@@ -148,38 +158,47 @@ uint8_t get_emitter_config(struct configuration * parametres,  parameters config
 	uint8_t status = 0;
 
 	data = malloc(sizeof(uint16_t)*1);
-	
+	#ifdef DEBUG_FUNC
 	printf("GET configuration\n");
+	#endif
     status = send_command_request(comm_lenght,header,id,data_lenght,command_status,command,type,data);
     free(data);
 	if(!status)
         return 0;
 
     //usleep(10000);
-    
+    #ifdef DEBUG_FUNC
     printf("commande de configuration  à  marchée\n");
+	#endif
 	data_lenght = 0x0002;
     uint8_t data_get[2];
     memcpy(data_get, &type,sizeof(uint8_t)*data_lenght);
     type = command;//command;
     command = 0x0114;
     comm_lenght = 32;
+	#ifdef DEBUG_FUNC
     printf("send getResult pour la configuration \n");
+	#endif
     status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_get,lecture);    
   
     if(!status)
         return 0;
-        
+    #ifdef DEBUG_FUNC
     printf("send getResult  à  marché\n");
 	printf("GET config result %d\n",(int)lecture[0]);
+	#endif
 	if(lecture[0] == 0x00)
 	{
+		#ifdef DEBUG_FUNC
 		printf("GET configuration acceptée\n");
+		#endif
 		
 	}
 	else
-	{
+	{	
+		#ifdef DEBUG_FUNC
 		printf("echec dans la configuration\n");
+		#endif
 		return 0;
 	}
     return 1;
@@ -303,27 +322,37 @@ uint8_t safe_shutdown()
 	if(!status)
         return 0;
         
+	#ifdef DEBUG_FUNC
     printf("commande de shut down\n");
+	#endif
 	uint8_t data_get[1] = {0};
     type = command;
     command = 0x0114;
     comm_lenght = 32;
     data_lenght = 0;
+	#ifdef DEBUG_FUNC
     printf("send getResult pour shut down \n");
+	#endif
     status = send_GetResult_request(comm_lenght,header,id,data_lenght,command_status,command,type,data_get,data_read);    
   
     if(!status)
         return 0;
-        
+
+    #ifdef DEBUG_FUNC
     printf("send getResult  à  marché\n");
 	printf("shut down result %.2X\n", data_read[0]);
+	#endif
 	if(data_read[0] == 0x00)
 	{
+		#ifdef DEBUG_FUNC
 		printf("shutting donw emitter");
+		#endif
 	}
 	else
 	{
+		#ifdef DEBUG_FUNC
 		printf("echec de shutdown");
+		#endif
 		return 0;
 	}
     return 1;

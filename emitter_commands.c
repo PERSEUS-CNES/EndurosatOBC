@@ -5,6 +5,7 @@
 #include "ftdi.h"
 #include "emitter_commands.h"
 #include "emitter_config.h"
+#include "debug.h"
 #include "WinTypes.h"
 
 void purgeBuffer()
@@ -14,11 +15,15 @@ void purgeBuffer()
 	ftStatus = ftdi_usb_purge_buffers(ftdiContext);
 	if(ftStatus < 0)
 	{
+		#ifdef DEBUG_COMMAND
 		printf("FT_Purge failed\n");
+		#endif
 	}
 	else
 	{
+		#ifdef DEBUG_COMMAND
 		printf("FT_Purge OK\n");
+		#endif
 	}
 }
 
@@ -39,11 +44,12 @@ void readData(uint8_t buffer[] , uint8_t * data_target)
 	{
 		memcpy(data_target, buffer + 14, data_lenght);
 	}
-	
+	#ifdef DEBUG_COMMAND
 	printf("data : ");
 	for(int i = 0; i < data_lenght; i++ ){
 		printf("%.2X , ", data_target[i]);}
     printf(";\n");
+	#endif
 }
 
 
@@ -117,15 +123,15 @@ uint8_t send_command_request(uint32_t command_size,
     bytesToWrite=command_size;
 	RxBytes=0;
 
-    if(debug != 0)
-	{
+    #ifdef DEBUG_COMMAND
+	
     	printf("commande : \n");
     	for(int i = 0; i < command_size; i++)
     	{
         	printf("%.2X " , command_buffer[i]);
     	}
     	printf("\n");
-	}
+	#endif
 	
 
 	uint8_t loop_01 = 1; // true
@@ -141,9 +147,11 @@ uint8_t send_command_request(uint32_t command_size,
  
     	if (bytesWritten != bytesToWrite)// vérifie que la commande à été entièrement envoyée
 		{
+			#ifdef DEBUG_COMMAND
 			printf("Failure.  FT_Write wrote %d bytes instead of %d.\n",
 		       	(int)bytesWritten, 
 		    	(int)bytesToWrite);
+			#endif
 			return 0;
 		}
 
@@ -181,8 +189,9 @@ uint8_t send_command_request(uint32_t command_size,
 
 			if(!RxBytes) // si aucun message n'a été recu après le timeout
 			{
+				#ifdef DEBUG_COMMAND
 				printf("Aucune reponse\n");
-
+				#endif
 				//loop_01 = 1;
 				//usleep(100);
 
@@ -193,52 +202,63 @@ uint8_t send_command_request(uint32_t command_size,
 			
 			if (RxBytes) { // si la réception à fonctionnée
 				
-				// FT_Read OK
-				printf("\nBytes red : %i \n", RxBytes);
-				if(debug != 0)
-				{
-					printf("Reponse Commande : "); // affiche la réponse
-					for(int i = 0; i < BytesReceived; i++)
-					{
-						printf("%.2X ", RxBuffer[i]);
-					}
-					printf("\n");
-				}
-				if(RxBuffer[8] == 0x05)
-				{
-					printf("ACKNOWLEDGED \n");
-					loop_01 = 0x00; // false
-				}
-				else if(RxBuffer[8] == 0x06)
-				{
-					printf("NOT ACKNOWLEDGABLE\n");
-					loop_01 = 0x00; // false
-					return 0;
-				}
-				else if(RxBuffer[8] == 0x07)
-				{
-					printf("BUSY\n");
-					usleep(100);
-					loop_01 = 0;
-
-					// retour dans la loop de lecture de la réponse
-					gettimeofday(&temps_actuel, NULL);
-					actuel_ms_resp_read = (temps_actuel.tv_sec * SEC_IN_MICRO) + temps_actuel.tv_usec;
-					current_cycle_resp_read =  actuel_ms_resp_read - start_ms_resp_read;
-					loop_02 = 1;
-				}
-				else if(RxBuffer[8] == 0x10)
-				{
-					printf("TEMPORARILLY0x01 NOT ACCEPTABLE\n");
-					loop_01 = 1; //true
-					usleep(1000);
-				}
-				else if(RxBuffer[0] != 0x45)
-				{
-					printf("WRONG HEADER\n");
+					// FT_Read OK
+					#ifdef DEBUG_COMMAND
+					printf("\nBytes red : %i \n", RxBytes);
 					
-					//loop_01 = 1;
-				}
+					
+						printf("Reponse Commande : "); // affiche la réponse
+						for(int i = 0; i < BytesReceived; i++)
+						{
+							printf("%.2X ", RxBuffer[i]);
+						}
+						printf("\n");
+					
+					#endif
+					if(RxBuffer[8] == 0x05)
+					{
+						#ifdef DEBUG_COMMAND
+						printf("ACKNOWLEDGED \n");
+						#endif
+						loop_01 = 0x00; // false
+					}
+					else if(RxBuffer[8] == 0x06)
+					{
+						#ifdef DEBUG_COMMAND
+						printf("NOT ACKNOWLEDGABLE\n");
+						#endif
+						loop_01 = 0x00; // false
+						return 0;
+					}
+					else if(RxBuffer[8] == 0x07)
+					{
+						#ifdef DEBUG_COMMAND
+						printf("BUSY\n");
+						#endif
+						usleep(100);
+						loop_01 = 0;
+
+						// retour dans la loop de lecture de la réponse
+						gettimeofday(&temps_actuel, NULL);
+						actuel_ms_resp_read = (temps_actuel.tv_sec * SEC_IN_MICRO) + temps_actuel.tv_usec;
+						current_cycle_resp_read =  actuel_ms_resp_read - start_ms_resp_read;
+						loop_02 = 1;
+					}
+					else if(RxBuffer[8] == 0x10)
+					{
+						#ifdef DEBUG_COMMAND
+						printf("TEMPORARILLY0x01 NOT ACCEPTABLE\n");
+						#endif
+						loop_01 = 1; //true
+						usleep(1000);
+					}
+					else if(RxBuffer[0] != 0x45)
+					{
+						#ifdef DEBUG_COMMAND
+						printf("WRONG HEADER\n");
+						#endif
+						//loop_01 = 1;
+					}
 
 				
 		
@@ -327,19 +347,21 @@ uint8_t send_GetResult_request(uint32_t command_size,
 		purgeBuffer();
 		bytesToWrite=command_size;
 		
-		// envoie la requete via le module RS485
 		bytesWritten = ftdi_write_data(ftdiContext,command_buffer,bytesToWrite);
 
 	
 		if (bytesWritten != bytesToWrite) // vérifie que tous bytes ont été envoyé
 		{
+			#ifdef DEBUG_COMMAND
 			printf("Failure.  FT_Write wrote %d bytes instead of %d.\n",
 		    	   (int)bytesWritten,
 		       		(int)bytesToWrite);
+			#endif
 			return 0;
 		}
+		#ifdef DEBUG_COMMAND
 		printf("Successfully wrote %d bytes\n", (int)bytesWritten);
-
+		#endif
 		RxBytes=0;
 		// demarre le timeout pour attendre la réponse
 		gettimeofday(&start, NULL); // enregistre l'heure actuelle dans la variable start
@@ -356,42 +378,49 @@ uint8_t send_GetResult_request(uint32_t command_size,
 			current_cycle_wait_resp = actuel_ms_wait_resp - start_ms_wait_resp;
 			usleep(100);
 			RxBytes = ftdi_read_data(ftdiContext,RxBuffer, RxBuffLen);
+			#ifdef DEBUG_COMMAND
 			printf("RxBytes = %d\n", RxBytes);
+			#endif		
 		}
 
 		if (RxBytes) { // si une réponse est envoyée via le module par l'emetteur
-
-			// FT_Read OK
-			printf("\nBytes red gt : %i\n", RxBytes);
-			if(debug == 1)
-			{
-				printf("Reponse : ");
-				for(int i = 0; i < 256; i++) // affiche la réponse
-				{
-					printf("%.2X ",RxBuffer[i]); 
-				}
-				printf("\n");
-			}
-			
-			if(RxBuffer[8] == 0x00)
-			{
-				readData(RxBuffer,reponse);  //récupère la partie data de la réponse
-			}
-			else if(RxBuffer[8] == 0x08)
-			{
-				printf("NO COMMAND FOR EXECUTION\n");
-				usleep(1000);
-				loop_01 = 0;
-				return 0;
-			}
-			else if(RxBuffer[8] == 0x07)
-			{
-				printf("BUSY g\n");
-				loop_01 = 1;
-				gettimeofday(&temps_actuel, NULL);
-				actuel_ms_resp_read = (temps_actuel.tv_sec * SEC_IN_MICRO) + temps_actuel.tv_usec;
-				current_cycle_resp_read =  actuel_ms_resp_read - start_ms_resp_read;
-			}
+	
+					// FT_Read OK
+					#ifdef DEBUG_COMMAND
+					printf("\nBytes red gt : %i\n", RxBytes);
+					
+					
+            			printf("Reponse : ");
+           				for(int i = 0; i < 256; i++) // affiche la réponse
+           				{
+            				printf("%.2X ",RxBuffer[i]); 
+           				}
+		   				printf("\n");
+					#endif
+					
+		    		if(RxBuffer[8] == 0x00)
+		    		{
+						readData(RxBuffer,reponse);  //récupère la partie data de la réponse
+					}
+					else if(RxBuffer[8] == 0x08)
+					{
+						#ifdef DEBUG_COMMAND
+						printf("NO COMMAND FOR EXECUTION\n");
+						#endif
+						usleep(1000);
+						loop_01 = 0;
+						return 0;
+					}
+					else if(RxBuffer[8] == 0x07)
+					{
+						#ifdef DEBUG_COMMAND
+						printf("BUSY g\n");
+						#endif
+						loop_01 = 1;
+						gettimeofday(&temps_actuel, NULL);
+						actuel_ms_resp_read = (temps_actuel.tv_sec * SEC_IN_MICRO) + temps_actuel.tv_usec;
+						current_cycle_resp_read =  actuel_ms_resp_read - start_ms_resp_read;
+					}
 				
 						
 		}
