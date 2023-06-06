@@ -16,6 +16,8 @@ int FilsEmetteur()
     int baud = 3000000;
     uint8_t status = 0;//boolen
     uint32_t wait = 5000;
+	
+	
     
     FT_STATUS status_ft = initialize_FTDI(baud, port);
 	

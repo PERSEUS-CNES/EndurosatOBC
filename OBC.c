@@ -11,6 +11,7 @@
 #include "./Librairies/FilsSauvegarde.h"
 #include "./Librairies/FilsTransmission.h"
 #include "./Librairies/FilsCentrale.h"
+#include "./Librairies/FilsSS.h"
 
 #include <stdio.h>		/* stderr, stdout, fprintf, perror */
 #include <unistd.h>		/* fork */
@@ -35,8 +36,9 @@ int main(void)
 	remove("./Data/fichier_GPS_vel.txt");
 	remove("./Data/fichier_EKF.txt");
 	remove("./Data/fichier_CLOCK.txt");
+ remove("./Data/fichier_sysenergie.txt");
 	//Création tableau ID des différents fils
-	pid_t pid_fils[4] = {-1,-1,-1,-1} ;
+	pid_t pid_fils[6] = {-1,-1,-1,-1,-1, -1} ;
 
 	//Création & initialisation File_de_message
 	//initialisation_File_de_message(&FileDeMessage);
@@ -46,7 +48,7 @@ int main(void)
 
 
 	//Création des fils
-	for (int i = 0 ; i < 4 ; i ++ ) {
+	for (int i = 0 ; i < 6 ; i ++ ) {
 		pid_fils[i] = fork();
 		if (pid_fils[i]==-1) {
 			perror("Echec du fork");
@@ -60,10 +62,10 @@ int main(void)
 
 	//Code du fils n°1 : le centrale
 	if (pid_fils[0] == 0) {
-		printf("Fils n°1 (centrale) : %d\n" , getpid());
+		printf("\nFils n°1 (centrale) : %d\n" , getpid());
 		FilsCentrale();
         DetruitFileDeMessage (&FileDeMessage) ;
-        printf("Fils n°1 (centrale): J'ai fini !\n");
+        printf("\nFils n°1 (centrale): J'ai fini !\n");
 		exit(EXIT_SUCCESS);
 	}
 
@@ -91,6 +93,22 @@ int main(void)
         printf("Fils n°1 (émetteur): J'ai fini !\n");
 		exit(EXIT_SUCCESS);
 	}
+	
+	//Code du fils n°5 : l'envoi aux sous systèmes
+	if (pid_fils[4] == 0) {
+		printf("Fils n°5 (SS) : %d\n" , getpid());
+    FilsSS();
+    printf("Fils n°5 (SS): J'ai fini !\n");
+		exit(EXIT_SUCCESS);
+	}
+ 
+ //Code du fils n°6 : l'envoi aux sous systèmes
+	if (pid_fils[5] == 0) {
+		printf("Fils n°6 (Energie) : %d\n" , getpid());
+    FilsEnergie();
+    printf("Fils n°6 (Energie): J'ai fini !\n");
+		exit(EXIT_SUCCESS);
+	}
 
 
 
@@ -98,6 +116,8 @@ int main(void)
 	wait(NULL);
 	wait(NULL);
     wait(NULL);
+	wait(NULL);
+ wait(NULL);
 
     printf("j'ai fini ! (père)\n");
 

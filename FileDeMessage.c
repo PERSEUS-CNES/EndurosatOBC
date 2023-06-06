@@ -34,6 +34,8 @@ void CreationFileDeMessage (File_de_message * file_de_message) {
 	file_de_message->file_message_Centrale = mq_open("/FileMessageCentrale", O_CREAT | O_RDWR, 0644, &attr);
 	file_de_message->file_message_Emetteur = mq_open("/FileMessageEmetteur", O_CREAT | O_RDWR, 0644, &attr);
 	file_de_message->file_message_Sauvegarde = mq_open("/FileMessageSauvegarde", O_CREAT | O_RDWR, 0644, &attr);
+	file_de_message->file_message_SS = mq_open("/FileMessageSS", O_CREAT | O_RDWR, 0644, &attr);
+	file_de_message->file_message_Energie = mq_open("/FileMessageEnergie", O_CREAT | O_RDWR, 0644, &attr);
 
 	if (file_de_message->file_message_Centrale == -1) {
             perror("Erreur lors de la créarion de la file de message centrale: ");
@@ -47,6 +49,16 @@ void CreationFileDeMessage (File_de_message * file_de_message) {
 		perror("Erreur lors de la créarion de la file de message sauvegarde: ");
 		printf("errno = %d\n", errno);
 	}
+	if (file_de_message->file_message_SS == -1) {
+		perror("Erreur lors de la créarion de la file de message SS: ");
+		printf("errno = %d\n", errno);
+	}
+ if (file_de_message->file_message_Energie == -1) {
+		perror("Erreur lors de la créarion de la file de message Energie: ");
+		printf("errno = %d\n", errno);
+	}
+
+ printf("good\n");
 	
 		
 }
@@ -66,6 +78,8 @@ void initialisation_File_de_message(File_de_message * F) {
 	F->file_message_Centrale = 0 ;                      //Initialisation de l'ID de la file de message avec la centrale innertielle
 	F->file_message_Emetteur = 0 ;                      //Initialisation de l'ID de la file de message avec l'emetteur
 	F->file_message_Sauvegarde = 0;                     //Initialisation de l'ID de la file de message avec le fils de sauvegarde
+	F->file_message_SS = 0;								//Initialisation de l'ID de la file de message avec le fils SS
+ F->file_message_Energie = 0;								//Initialisation de l'ID de la file de message avec le fils Energie
 	//F.file_messaage_Roulis = 0 ;                       //Initialisation de l'ID de la file de message avec le systeme de roulis
 	//F.file_messaage_Parafoil = 0 ;                     //Initialisation de l'ID de la file de message avec le systeme de parafoil
 
@@ -85,7 +99,7 @@ void initialisation_File_de_message(File_de_message * F) {
  */
 bool DetruitFileDeMessage (File_de_message * file_de_message) {
 
-	int ReturnValue[3];
+	int ReturnValue[5];
 
 	file_de_message->file_message_Centrale = (mqd_t) 0 ;
 	ReturnValue[0] = mq_unlink ("/FileMessageCentrale");
@@ -95,8 +109,15 @@ bool DetruitFileDeMessage (File_de_message * file_de_message) {
 
 	file_de_message->file_message_Sauvegarde = (mqd_t) 0 ;
 	ReturnValue[2] = mq_unlink("/FileMessageSauvegarde");
+	
+	file_de_message->file_message_SS = (mqd_t) 0 ;
+	ReturnValue[3] = mq_unlink("/FileMessageSS");
+ 
+ file_de_message->file_message_Energie = (mqd_t) 0 ;
+	ReturnValue[4] = mq_unlink("/FileMessageEnergie");
 
-	if (ReturnValue[0]==0 && ReturnValue[1]==0 && ReturnValue[2]==0) {
+
+	if (ReturnValue[0]==0 && ReturnValue[1]==0 && ReturnValue[2]==0 && ReturnValue[3]==0 && ReturnValue[4]==0) {
 		return true;
 	}
 	else {
@@ -116,7 +137,7 @@ bool DetruitFileDeMessage (File_de_message * file_de_message) {
  */
 bool FermeFileDeMessage (File_de_message * file_de_message) {
 
-	int ReturnValue[3];
+	int ReturnValue[5];
 
 	ReturnValue[0] = mq_close (file_de_message->file_message_Centrale);
 	file_de_message->file_message_Centrale =(mqd_t) -1 ;
@@ -126,8 +147,15 @@ bool FermeFileDeMessage (File_de_message * file_de_message) {
 
 	ReturnValue[2] = mq_close (file_de_message->file_message_Sauvegarde);
 	file_de_message->file_message_Sauvegarde = (mqd_t) -1 ;
+	
+	ReturnValue[3] = mq_close (file_de_message->file_message_SS);
+	file_de_message->file_message_SS = (mqd_t) -1 ;
+ 
+ ReturnValue[4] = mq_close (file_de_message->file_message_Energie);
+	file_de_message->file_message_Energie = (mqd_t) -1 ;
 
-	if (ReturnValue[0]==0 && ReturnValue[1]==0 && ReturnValue[2]==0) {
+
+	if (ReturnValue[0]==0 && ReturnValue[1]==0 && ReturnValue[2]==0 && ReturnValue[3]==0 && ReturnValue[4]==0) {
 		return true;
 	}
 	else {

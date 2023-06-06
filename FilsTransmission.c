@@ -25,6 +25,7 @@
 void FilsTransmission() {
     Message  * message = malloc(sizeof(Message));
     *message = receptionCentrale() ;
+    printf("receptioncentrale2\n");
 
     switch (message->type) {
             case GPS_POS_TYPE: ;
@@ -32,6 +33,7 @@ void FilsTransmission() {
 
                 Envoie_data_GPS_pos(gps_pos_data,1, SAUVEGARDE);
                 Envoie_data_GPS_pos(gps_pos_data,1, EMETTEUR);
+				Envoie_data_GPS_pos(gps_pos_data,1, ENVOI_SS);
 
                 break;
             case GPS_VEL_TYPE: ;
@@ -39,6 +41,7 @@ void FilsTransmission() {
 
                 Envoie_data_GPS_vel(gps_vel_data , 1, SAUVEGARDE);
                 Envoie_data_GPS_vel(gps_vel_data , 1, EMETTEUR);
+				Envoie_data_GPS_vel(gps_vel_data,1, ENVOI_SS);
 
                 break;
             case IMU_TYPE: ;
@@ -46,6 +49,7 @@ void FilsTransmission() {
             
                 Envoie_data_IMU(imu_data , 1, SAUVEGARDE);
                 Envoie_data_IMU(imu_data , 1, EMETTEUR);
+				Envoie_data_IMU(imu_data,1, ENVOI_SS);
 
                 break;
             case MAGNETOMETERS_TYPE: ;
@@ -53,6 +57,7 @@ void FilsTransmission() {
 
                 Envoie_data_Magnetometers(magnetometers_data , 1, SAUVEGARDE);
                 Envoie_data_Magnetometers(magnetometers_data , 1, EMETTEUR);
+				Envoie_data_Magnetometers(magnetometers_data , 1, ENVOI_SS);
 
                 break;
             case PRESSURE_TYPE: ;
@@ -60,6 +65,7 @@ void FilsTransmission() {
 
                 Envoie_data_Pressure(pressure_data , 1, SAUVEGARDE);
                 Envoie_data_Pressure(pressure_data , 1, EMETTEUR);
+				Envoie_data_Pressure(pressure_data , 1, ENVOI_SS);
 
                 break;
             case EKF_TYPE: ;
@@ -67,6 +73,7 @@ void FilsTransmission() {
 
                 Envoie_data_EKF(ekf_data , 1, SAUVEGARDE);
                 Envoie_data_EKF(ekf_data , 1, EMETTEUR);
+				Envoie_data_EKF(ekf_data , 1, ENVOI_SS);
 
                 break;
             case CLOCK_TYPE: ;
@@ -74,6 +81,29 @@ void FilsTransmission() {
 
                 Envoie_data_CLOCK(clock_data , 1, SAUVEGARDE);
                 Envoie_data_CLOCK(clock_data , 1, EMETTEUR);
+				Envoie_data_CLOCK(clock_data , 1, ENVOI_SS);
+
+                break;
+                
+          case ENERGIE_TYPE: ;
+                SYSENERGIE energie_data = message->data.sysenergie;
+
+                Envoie_data_Energie(energie_data , 1, SAUVEGARDE);
+                Envoie_data_Energie(energie_data , 1, EMETTEUR);
+               // Envoie_data_ENERGIE(energie_data , 1, ENERGIE); //normalement non
+               // Envoie_data_Energie(energie_data , 1, ENVOI_SS);
+
+                break;
+
+             case STATUS_TYPE: ;
+                STATUS status_data = message->data.status;
+                printf("statustype_fils transmission\n");
+
+                Envoie_data_Status(status_data , 1, SAUVEGARDE);
+                Envoie_data_Status(status_data , 1, EMETTEUR);
+                //Envoie_data_Status(status_data , 1, ENVOI_STATUS);
+               // Envoie_data_ENERGIE(energie_data , 1, ENERGIE); //normalement non
+               // Envoie_data_Energie(energie_data , 1, ENVOI_SS);
 
                 break;
             default:

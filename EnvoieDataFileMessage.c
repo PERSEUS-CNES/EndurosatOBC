@@ -47,6 +47,11 @@ int Envoie_data_GPS_pos (GPS_pos GPS_pos ,unsigned int priorite , PeripheriqueTy
     case SAUVEGARDE :
         transmition_ok = mq_send (FileDeMessage.file_message_Sauvegarde, (const char*)&message, sizeof(Message) , priorite);
         break;
+		
+	case ENVOI_SS :
+		transmition_ok = mq_send (FileDeMessage.file_message_SS, (const char*)&message, sizeof(Message) , priorite);
+        break;
+ 
 
     default:
         break;
@@ -97,6 +102,10 @@ int Envoie_data_GPS_vel (GPS_vel GPS_vel , unsigned int priorite , PeripheriqueT
         case SAUVEGARDE :
             transmition_ok = mq_send (FileDeMessage.file_message_Sauvegarde, (const char*)&message, sizeof(Message) , priorite);
             break;
+		
+		case ENVOI_SS :
+			transmition_ok = mq_send (FileDeMessage.file_message_SS, (const char*)&message, sizeof(Message) , priorite);
+			break;
 
         default:
             break;
@@ -147,6 +156,10 @@ int Envoie_data_IMU (IMU IMU , unsigned int priorite , PeripheriqueType peripher
         case SAUVEGARDE :
             transmition_ok = mq_send (FileDeMessage.file_message_Sauvegarde, (const char*)&message, sizeof(Message) , priorite);
             break;
+		
+		case ENVOI_SS :
+			transmition_ok = mq_send (FileDeMessage.file_message_SS, (const char*)&message, sizeof(Message) , priorite);
+			break;
 
         default:
             break;
@@ -196,6 +209,10 @@ int Envoie_data_Magnetometers (Magnetometers Magnetometers , unsigned int priori
         case SAUVEGARDE :
             transmition_ok = mq_send (FileDeMessage.file_message_Sauvegarde, (const char*)&message, sizeof(Message) , priorite);
             break;
+		
+		case ENVOI_SS :
+			transmition_ok = mq_send (FileDeMessage.file_message_SS, (const char*)&message, sizeof(Message) , priorite);
+			break;
 
         default:
             break;
@@ -245,6 +262,10 @@ int Envoie_data_Pressure (Pressure Pressure , unsigned int priorite , Peripheriq
         case SAUVEGARDE :
             transmition_ok = mq_send (FileDeMessage.file_message_Sauvegarde, (const char*)&message, sizeof(Message) , priorite);
             break;
+			
+		case ENVOI_SS :
+			transmition_ok = mq_send (FileDeMessage.file_message_SS, (const char*)&message, sizeof(Message) , priorite);
+			break;
 
         default:
             break;
@@ -294,6 +315,10 @@ int Envoie_data_EKF_nav (EKF_nav nav , unsigned int priorite , PeripheriqueType 
         case SAUVEGARDE :
             transmition_ok = mq_send (FileDeMessage.file_message_Sauvegarde, (const char*)&message, sizeof(Message) , priorite);
             break;
+			
+		case ENVOI_SS :
+			transmition_ok = mq_send (FileDeMessage.file_message_SS, (const char*)&message, sizeof(Message) , priorite);
+			break;
 
         default:
             break;
@@ -340,6 +365,10 @@ int Envoie_data_EKF (EKF EKF , unsigned int priorite , PeripheriqueType peripher
         case SAUVEGARDE :
             transmition_ok = mq_send (FileDeMessage.file_message_Sauvegarde, (const char*)&message, sizeof(Message) , priorite);
             break;
+		
+		case ENVOI_SS :
+			transmition_ok = mq_send (FileDeMessage.file_message_SS, (const char*)&message, sizeof(Message) , priorite);
+			break;
 
         default:
             break;
@@ -388,12 +417,95 @@ int Envoie_data_CLOCK (CLOCK CLOCK ,unsigned int priorite , PeripheriqueType per
     case SAUVEGARDE :
         transmition_ok = mq_send (FileDeMessage.file_message_Sauvegarde, (const char*)&message, sizeof(Message) , priorite);
         break;
+	
+	case ENVOI_SS :
+		transmition_ok = mq_send (FileDeMessage.file_message_SS, (const char*)&message, sizeof(Message) , priorite);
+        break;
 
     default:
         break;
     }
 
     //printf("Envoie CLOCK fini !\n");
+
+    return transmition_ok ;
+
+}
+
+int Envoie_data_Energie (SYSENERGIE SYSENERGIE ,unsigned int priorite , PeripheriqueType peripherique) {
+    int transmition_ok ;
+    
+    Message message;
+
+    message.type = ENERGIE_TYPE;
+    message.data.sysenergie = SYSENERGIE ;
+
+    switch (peripherique)
+    {
+    case CENTRALE :
+        transmition_ok = mq_send (FileDeMessage.file_message_Centrale, (const char*)&message, sizeof(Message) , priorite);
+        break;
+
+    case EMETTEUR :
+        transmition_ok = mq_send (FileDeMessage.file_message_Emetteur, (const char*)&message, sizeof(Message) , priorite);
+        break;
+
+    case SAUVEGARDE :
+        transmition_ok = mq_send (FileDeMessage.file_message_Sauvegarde, (const char*)&message, sizeof(Message) , priorite);
+        break;
+		
+	case ENVOI_SS :
+		transmition_ok = mq_send (FileDeMessage.file_message_SS, (const char*)&message, sizeof(Message) , priorite);
+        break;
+ 
+
+    default:
+        break;
+    }
+
+    //printf("Envoie GPS_pos fini !\n");
+
+    return transmition_ok ;
+
+}
+
+int Envoie_data_Status (STATUS STATUS ,unsigned int priorite , PeripheriqueType peripherique) {
+    int transmition_ok ;
+    printf("je suis là\n");
+    Message message;
+
+    message.type = STATUS_TYPE;
+    message.data.status = STATUS ;
+
+    switch (peripherique)
+    {
+    case CENTRALE :
+        transmition_ok = mq_send (FileDeMessage.file_message_Centrale, (const char*)&message, sizeof(Message) , priorite);
+        break;
+
+    case EMETTEUR :
+        transmition_ok = mq_send (FileDeMessage.file_message_Emetteur, (const char*)&message, sizeof(Message) , priorite);
+        break;
+
+    case SAUVEGARDE :
+        printf("Sauvegarde envoi data\n");
+        printf("%d\n",FileDeMessage.file_message_Sauvegarde);
+        transmition_ok = mq_send (FileDeMessage.file_message_Sauvegarde, (const char*)&message, sizeof(Message) , priorite);
+        break;
+		
+	case ENVOI_SS :
+		transmition_ok = mq_send (FileDeMessage.file_message_SS, (const char*)&message, sizeof(Message) , priorite);
+        break;
+
+    /*case ENVOI_STATUS :
+        transmition_ok = mq_send (FileDeMessage.file_message_Status, (const char*)&message, sizeof(Message) , priorite);
+        break;*/
+ 
+    default:
+        break;
+    }
+
+    printf("je suis là 2\n");
 
     return transmition_ok ;
 

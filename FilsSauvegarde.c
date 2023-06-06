@@ -44,6 +44,8 @@ void open_files(Variables_fichiers * file_struct,char* mode){
 	file_struct->fichier_donnees_EKF=fopen("./Data/fichier_EKF.txt",mode);
 	file_struct->fichier_donnees_EKF_nav=fopen("./Data/fichier_EKF_nav.txt",mode);
 	file_struct->fichier_donnees_CLOCK=fopen("./Data/fichier_CLOCK.txt",mode);
+ 	file_struct->fichier_donnees_ENERGIE=fopen("./Data/fichier_ENERGIE.txt",mode);
+	file_struct->fichier_donnees_STATUS=fopen("./Data/fichier_STATUS.txt",mode);
 
 	/* teste si les fichiers ont bien été ouvert */
 
@@ -80,6 +82,15 @@ void open_files(Variables_fichiers * file_struct,char* mode){
 
 	if (file_struct->fichier_donnees_CLOCK!=NULL){
 		file_struct->file_open[CLOCK_TYPE]=true;
+		file_struct->compteur_fichiers+=1;
+	}
+ if (file_struct->fichier_donnees_ENERGIE!=NULL){
+		file_struct->file_open[ENERGIE_TYPE]=true;
+		file_struct->compteur_fichiers+=1;
+	}
+	if (file_struct->fichier_donnees_STATUS!=NULL){
+		printf("ouverture fichier status\n");
+		file_struct->file_open[STATUS_TYPE]=true;
 		file_struct->compteur_fichiers+=1;
 	}
 	
@@ -146,6 +157,16 @@ void close_files(Variables_fichiers *file_struct){
 	if(file_struct->file_open[CLOCK_TYPE]){
 		file_struct->file_open[CLOCK_TYPE]=false;
 		fclose(file_struct->fichier_donnees_CLOCK);
+		file_struct->compteur_fichiers-=1;
+	}
+ if(file_struct->file_open[ENERGIE_TYPE]){
+		file_struct->file_open[ENERGIE_TYPE]=false;
+		fclose(file_struct->fichier_donnees_ENERGIE);
+		file_struct->compteur_fichiers-=1;
+	}
+	if(file_struct->file_open[STATUS_TYPE]){
+		file_struct->file_open[STATUS_TYPE]=false;
+		fclose(file_struct->fichier_donnees_STATUS);
 		file_struct->compteur_fichiers-=1;
 	}
 	if(debug){printf("close\n");}
@@ -233,6 +254,17 @@ FILE* ID2file(Variables_fichiers *file_struct,MessageType id){
 		case CLOCK_TYPE :
 			if(file_struct->file_open[CLOCK_TYPE]){
 				return file_struct->fichier_donnees_CLOCK;
+			}
+			break;
+      case ENERGIE_TYPE :
+			if(file_struct->file_open[ENERGIE_TYPE]){
+				return file_struct->fichier_donnees_ENERGIE;
+			}
+			break;
+		case STATUS_TYPE :
+			printf("status fichier\n");
+			if(file_struct->file_open[STATUS_TYPE]){
+				return file_struct->fichier_donnees_STATUS;
 			}
 			break;
 	}
@@ -432,6 +464,38 @@ void save(FILE* file,MessageType id,Message message){
 			//ToString_data_CLOCK(clock);
 
 			break;
+      
+   case ENERGIE_TYPE : ;
+     SYSENERGIE energie = message.data.sysenergie;
+			fprintf(file,"/");
+			fprintf(file,"%f",energie.tension_batt_1);
+      fprintf(file,"/");
+			fprintf(file,"%f",energie.tension_batt_2);
+      fprintf(file,"/");
+			fprintf(file,"%f",energie.courant_batt_1);	
+      fprintf(file,"/");
+			fprintf(file,"%f",energie.courant_batt_2);			
+      fprintf(file,"/");
+			fprintf(file,"%f",energie.status_energie);	
+
+			break;
+	
+	case STATUS_TYPE : ;
+		printf("sauvergarde donnee\n");
+     STATUS status = message.data.status;
+			fprintf(file,"/");
+			fprintf(file,"%d",status.Status_Roulis);
+      fprintf(file,"/");
+			fprintf(file,"%d",status.Status_Parafoil);
+      fprintf(file,"/");
+			fprintf(file,"%d",status.Status_Servo_1);	
+      fprintf(file,"/");
+			fprintf(file,"%d",status.Status_Servo_2);			
+      fprintf(file,"/");
+			fprintf(file,"%d",status.Status_Sequenceur);	
+
+			break;
+
 		
 	}
 	

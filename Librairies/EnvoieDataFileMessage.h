@@ -157,4 +157,8 @@ int Envoie_data_EKF (EKF EKF , unsigned int priorite , PeripheriqueType peripher
  */
 int Envoie_data_CLOCK (CLOCK CLOCK ,unsigned int priorite , PeripheriqueType peripherique) ;
 
+int Envoie_data_Energie(SYSENERGIE ,unsigned int , PeripheriqueType) ;
+
+int Envoie_data_Status(STATUS ,unsigned int , PeripheriqueType) ;
+
 #endif

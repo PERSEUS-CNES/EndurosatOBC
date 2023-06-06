@@ -20,7 +20,7 @@ Centrale/sbgECom/common/network Centrale/sbgECom/common/interfaces Centrale/sbgE
 
 SRC_DIR = .
 OUTILS := FileDeMessage.c EnvoieDataFileMessage.c ReceptionDataFileMessage.c
-FILS   := FilsCentrale.c FilsSauvegarde.c FilsTransmission.c
+FILS   := FilsCentrale.c FilsSauvegarde.c FilsTransmission.c FilsSS.c FilsEnergie.c
 STRUCT :=  Structure.c  VariableGlobale.c
 
 SRCS := OBC.c $(OUTILS) $(STRUCT) $(FILS)

@@ -292,6 +292,7 @@ void ToString_data_CLOCK (CLOCK CLOCK) {
 
 }
 
+
 #include <stdio.h>
 
 void afficher_code_binaire_float(float nombre) {

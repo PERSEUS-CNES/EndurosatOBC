@@ -35,6 +35,8 @@ typedef struct variables_fichiers {
 	FILE * fichier_donnees_EKF;           //Fichier des donnes de l'EKF
 	FILE * fichier_donnees_EKF_nav;		  //Fichier des donnes de navigation
 	FILE * fichier_donnees_CLOCK;         //Fichier des donnes de l'horloge
+ FILE * fichier_donnees_ENERGIE;         //fichier energie
+ FILE * fichier_donnees_STATUS;         //fichier status
 } variables_fichiers ;
 typedef variables_fichiers Variables_fichiers;
 
@@ -93,7 +95,7 @@ typedef  gps_pos  GPS_pos;
  *
  */
 typedef struct ekf_nav {
-		double position[3]     ;
+		double position[3]     ; //latitude, longitude, altitude
 		float velocity[3]      ;
 		float velocityStdDev[3];
 		
@@ -218,6 +220,29 @@ typedef struct clock_struct {
 } clock_struct ;
 typedef  clock_struct CLOCK;
 
+
+/* ------------------------------------Sys energie -----------------------------------------*/
+
+
+typedef struct sysenergie {
+		    float tension_batt_1       ;         //tension batt 1
+        float tension_batt_2        ;         //tension batt 2
+        float courant_batt_1        ;         //courant batt 1
+        float courant_batt_2        ;         //courant batt 2
+        uint8_t status_energie ; //status energie
+
+} sysenergie ;
+typedef  sysenergie  SYSENERGIE;
+
+typedef struct status {
+	uint8_t Status_Roulis;
+	uint8_t Status_Parafoil;
+	uint8_t Status_Servo_1;
+	uint8_t Status_Servo_2;
+	uint8_t Status_Sequenceur;
+} status ;
+typedef  status  STATUS;
+
 /*! -----------------------------------------------    Les files de messages    -----------------------------------------------*/
 
 /**
@@ -232,6 +257,10 @@ typedef struct file_de_message {
 	mqd_t file_message_Centrale ;         //ID de la file de message pour la communication avec la centrale inertiel
 	mqd_t file_message_Emetteur ;         //ID de la file de message pour la communication avec l'emetteur
 	mqd_t file_message_Sauvegarde ;       //ID de la file de message pour la communication avec le fils de sauvegarde
+	mqd_t file_message_SS ;       //ID de la file de message pour la communication avec le fils de sauvegarde
+ mqd_t file_message_Energie ;
+ mqd_t file_message_Status ;
+	
 
 	int nb_message_recu ;                 //Nombre de message reçu
 
@@ -249,7 +278,10 @@ typedef file_de_message File_de_message;
 typedef enum {
     CENTRALE,
     EMETTEUR,
-	SAUVEGARDE,
+	  SAUVEGARDE,
+	  ENVOI_SS,
+   ENERGIE,
+   ENVOI_STATUS
 } PeripheriqueType;
 
 /**
@@ -267,7 +299,9 @@ typedef enum {
 	PRESSURE_TYPE,
 	EKF_TYPE,
 	EKF_NAV_TYPE,
-	CLOCK_TYPE
+	CLOCK_TYPE,
+   ENERGIE_TYPE,
+   STATUS_TYPE
 } MessageType;
 
 /**
@@ -288,6 +322,8 @@ typedef struct {
 		EKF ekf ; 						// Données de l'EKF
 		EKF_nav ekf_nav;					// Données de navigation
 		CLOCK clock ;					// Données de l'horloge
+     SYSENERGIE sysenergie ;					// Données du syst energie
+	 STATUS status;
     } data;
 } Message;
 

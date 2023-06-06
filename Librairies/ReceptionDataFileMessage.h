@@ -37,4 +37,20 @@ Message receptionCentrale(void) ;
  */
 Message receptionSauvegarde(void);
 
+
+/**
+ * @brief Fonction qui reçois les données du fils transmission
+ * 
+ * @date 04/04/2023
+ * 
+ * @return message -> Message reçu de la centrale inertiel
+ *
+ * @author Team OBC (ENSSAT)
+ *
+ */
+Message receptionSS(void);
+
+Message receptionEnergie(void);
+
+
 #endif

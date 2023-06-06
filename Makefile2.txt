@@ -33,7 +33,7 @@ DEPS_MAIN := $(shell $(CC) -MM OBC.c | sed 's/OBC.o://g')
 
 ################################## Liste des fihiers .c de l'OBC ##################################
 OUTILS := FileDeMessage.c EnvoieDataFileMessage.c ReceptionDataFileMessage.c
-FILS   := FilsCentrale.c FilsSauvegarde.c FilsTransmission.c
+FILS   := FilsCentrale.c FilsSauvegarde.c FilsTransmission.c FilsSS.c
 STRUCT :=  Structure.c  VariableGlobale.c
 
 SRCS := OBC.c $(OUTILS) $(STRUCT) $(FILS)
@@ -81,6 +81,9 @@ FilsSauvegarde.o :
 
 FilsTransmission.o : 
 	$(CC) $(CFLAGS) -c FilsTransmission.c -o $(TARGET_DIR)/FilsTransmission.o
+	
+FilsSS.o : 
+	$(CC) $(CFLAGS) -c FilsSS.c -o $(TARGET_DIR)/FilsSS.o
 
 
 
