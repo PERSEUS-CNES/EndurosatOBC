@@ -3,7 +3,6 @@
 #include <string.h>
 #include "emitter_config.h"
 #include "emitter_commands.h"
-#include "debug.h"
 #include "ftdi.h"
 
 struct ftdi_context *ftdiContext;

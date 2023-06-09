@@ -10,7 +10,6 @@
 #include "emitter_writing.h"
 
 #include "fils_emitter.h"
-#include "debug.h"
 
 emitter_host_state host_state = emitter_initialisation;
 initialisation_state init_state = ftdi_port;

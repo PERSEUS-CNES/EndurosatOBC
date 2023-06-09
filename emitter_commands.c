@@ -5,7 +5,6 @@
 #include "ftdi.h"
 #include "emitter_commands.h"
 #include "emitter_config.h"
-#include "debug.h"
 #include "WinTypes.h"
 
 void purgeBuffer()

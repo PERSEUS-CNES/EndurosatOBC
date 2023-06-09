@@ -4,7 +4,6 @@
 #include <string.h>
 #include "emitter_commands.h"
 #include "emitter_sending.h"
-#include "debug.h"
 
 
 // envoie le fichier séléctionné par son nom

@@ -22,7 +22,8 @@ extern emitter_host_state host_state;
 //fonction a lancer dans le fils de l'emetteur
 void fils_emitter();
 
-void incr_file_name(uint8_t * file_name, int file_number);
+//incremente le nom du fichier Log_XX.txt
+void incr_file_name(uint8_t * * s);
 
 //permet de tester l'envoi de data
 void temp_get_obc_data(uint8_t * * data_target, uint32_t * data_lenght);
