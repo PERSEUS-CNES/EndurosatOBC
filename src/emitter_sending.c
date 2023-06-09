@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include "emitter_commands.h"
-#include "emitter_sending.h"
+#include "../include/emitter_commands.h"
+#include "../include/emitter_sending.h"
 
 
 // envoie le fichier séléctionné par son nom

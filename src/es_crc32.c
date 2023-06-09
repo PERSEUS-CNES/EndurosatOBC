@@ -56,7 +56,7 @@
 
   
 
-#include "es_crc32.h"
+#include "../include/es_crc32.h"
 //#include "stm32f4xx_hal.h"
 
 unsigned int crc32_tab[] = {

@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>  
-#include "emitter_reading.h"
-#include "emitter_commands.h"
+#include "../include/emitter_reading.h"
+#include "../include/emitter_commands.h"
 
 uint8_t openFile(char name[], char fileHandle[])
 {

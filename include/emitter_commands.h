@@ -5,7 +5,7 @@
 #include <sys/time.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include "ftdi.h"
+#include "../include/ftdi.h"
 
 #define EMITTER_ID 0x2006 // id de l'emetteur
 #define EMITTER_HEADER 0x50555345 // header des commandes 0x45535550

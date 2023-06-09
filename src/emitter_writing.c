@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include "emitter_commands.h"
-#include "emitter_writing.h"
+#include "../include/emitter_commands.h"
+#include "../include/emitter_writing.h"
 
 uint8_t createFile(char name[],uint32_t size , char fileHandle[]) // constitue la commande pour créer un fichier et l'envoie à l'emetteur
 {

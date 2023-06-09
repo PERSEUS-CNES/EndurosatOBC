@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include "emitter_config.h"
-#include "emitter_commands.h"
-#include "ftdi.h"
+#include "../include/emitter_config.h"
+#include "../include/emitter_commands.h"
+#include "../include/ftdi.h"
 
 struct ftdi_context *ftdiContext;
 

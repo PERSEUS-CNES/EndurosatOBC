@@ -2,10 +2,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include "ftdi.h"
-#include "emitter_commands.h"
-#include "emitter_config.h"
-#include "WinTypes.h"
+#include "../include/ftdi.h"
+#include "../include/emitter_commands.h"
+#include "../include/emitter_config.h"
+#include "../include/WinTypes.h"
+#include "../include/es_crc32.h"
 
 void purgeBuffer()
 {

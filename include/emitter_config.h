@@ -1,9 +1,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "ftdi.h"
+#include "../include/ftdi.h"
 
-extern uint8_t debug;
 
 extern struct ftdi_context *ftdiContext;
 //extern FT_HANDLE  ftHandle;
